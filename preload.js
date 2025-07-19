@@ -7,12 +7,7 @@ contextBridge.exposeInMainWorld('api', {
   // Generar etiqueta para un producto
   generarEtiqueta: (producto) => ipcRenderer.invoke('generar-etiqueta', producto),
 
-  // Obtener configuración de impresora
-  obtenerConfiguracionImpresora: () => ipcRenderer.invoke('obtener-configuracion-impresora'),
-
-  // Guardar configuración de impresora
-  guardarConfiguracionImpresora: (config) => ipcRenderer.invoke('guardar-configuracion-impresora', config),
-
-  // Obtener lista de impresoras reales
-  obtenerImpresoras: () => ipcRenderer.invoke('obtener-impresoras')
+  guardarLogo: (fileData) => ipcRenderer.invoke('guardar-logo', fileData),
+  obtenerConfiguracion: () => ipcRenderer.invoke('obtener-configuracion'),
+  guardarConfiguracion: (config) => ipcRenderer.invoke('guardar-configuracion', config),
 });

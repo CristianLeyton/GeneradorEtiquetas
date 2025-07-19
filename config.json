@@ -1,3 +1,4 @@
 {
-  "tamanoEtiqueta": "grande"
+  "tamanoEtiqueta": "grande",
+  "logoPath": "src/logo/logo.png"
 }

@@ -30,6 +30,13 @@ function createWindow() {
                     },
                 },
                 {
+                    label: 'DevTools',
+                    accelerator: 'F12',
+                    click: () => {
+                        mainWindow.webContents.openDevTools();
+                    },
+                },
+                {
                     label: 'Exit',
                     accelerator: 'CmdOrCtrl+Q',
                     click: () => {
@@ -151,35 +158,87 @@ ipcMain.handle('generar-etiqueta', async (event, productos) => {
     }
 });
 
-ipcMain.handle('obtener-configuracion-impresora', async () => {
+ipcMain.handle('guardar-logo', async (event, fileData) => {
+    try {
+        const logoDir = path.join(__dirname, 'src', 'logo');
+        if (!fs.existsSync(logoDir)) {
+            fs.mkdirSync(logoDir, { recursive: true });
+        }
+        // Extraer base64 y tipo de archivo
+        const matches = fileData.dataUrl.match(/^data:(.+);base64,(.+)$/);
+        if (!matches) throw new Error('Formato de imagen inválido');
+        const ext = fileData.name.split('.').pop();
+        const destPath = path.join(logoDir, 'logo.' + ext);
+        const buffer = Buffer.from(matches[2], 'base64');
+        fs.writeFileSync(destPath, buffer);
+        // Guardar la ruta en config.json
+        const configPath = path.join(__dirname, 'config.json');
+        let config = {};
+        if (fs.existsSync(configPath)) {
+            config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        }
+        config.logoPath = 'src/logo/logo.' + ext;
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+        return { success: true, path: config.logoPath };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('obtener-configuracion', async () => {
     try {
         const configPath = path.join(__dirname, 'config.json');
         if (fs.existsSync(configPath)) {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            return { success: true, data: config };
+            return config;
         }
-        return { success: true, data: {} };
+        return {};
     } catch (error) {
-        return { success: false, error: error.message };
+        return {};
     }
 });
 
-ipcMain.handle('guardar-configuracion-impresora', async (event, config) => {
+ipcMain.handle('guardar-configuracion', async (event, nuevaConfig) => {
     try {
         const configPath = path.join(__dirname, 'config.json');
-        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+        let config = {};
+        if (fs.existsSync(configPath)) {
+            config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        }
+        // Eliminar logo si se solicita
+        if (nuevaConfig.eliminarLogo) {
+            if (config.logoPath) {
+                const logoFullPath = path.join(__dirname, config.logoPath);
+                if (fs.existsSync(logoFullPath)) {
+                    fs.unlinkSync(logoFullPath);
+                }
+            }
+            delete nuevaConfig.logo;
+            delete nuevaConfig.logoPath;
+            config.logoPath = undefined;
+        }
+        // Guardar logo nuevo si se proporciona
+        if (nuevaConfig.logo) {
+            const logoDir = path.join(__dirname, 'src', 'logo');
+            if (!fs.existsSync(logoDir)) {
+                fs.mkdirSync(logoDir, { recursive: true });
+            }
+            const matches = nuevaConfig.logo.dataUrl.match(/^data:(.+);base64,(.+)$/);
+            if (!matches) throw new Error('Formato de imagen inválido');
+            const ext = nuevaConfig.logo.name.split('.').pop();
+            const destPath = path.join(logoDir, 'logo.' + ext);
+            const buffer = Buffer.from(matches[2], 'base64');
+            fs.writeFileSync(destPath, buffer);
+            nuevaConfig.logoPath = 'src/logo/logo.' + ext;
+            config.logoPath = nuevaConfig.logoPath;
+            delete nuevaConfig.logo;
+        }
+        // Mantener el logoPath si ya existe y no viene en la nueva config
+        if (config.logoPath && !nuevaConfig.logoPath) {
+            nuevaConfig.logoPath = config.logoPath;
+        }
+        fs.writeFileSync(configPath, JSON.stringify(nuevaConfig, null, 2));
         return { success: true };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-});
-
-// Handler para obtener la lista de impresoras del sistema
-ipcMain.handle('obtener-impresoras', async () => {
-    try {
-        if (!mainWindow) throw new Error('Ventana principal no disponible');
-        const impresoras = mainWindow.webContents.getPrinters();
-        return { success: true, data: impresoras };
     } catch (error) {
         return { success: false, error: error.message };
     }

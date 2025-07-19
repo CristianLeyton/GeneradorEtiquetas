@@ -15,7 +15,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const listaEtiquetasContainer = document.getElementById('listaEtiquetasContainer');
   const listaEtiquetas = document.getElementById('listaEtiquetas');
   const btnImprimirTodas = document.getElementById('btnImprimirTodas');
-  const selectImpresora = document.getElementById('impresora');
+  // Eliminar función cargarImpresoras y cualquier referencia a window.api.obtenerImpresoras o selectImpresora
 
   let productoSeleccionado = null;
   let etiquetasAImprimir = [];
@@ -44,12 +44,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Función para crear tarjeta de producto
   function crearTarjetaProducto(producto) {
     const tarjeta = document.createElement('div');
-    tarjeta.className = 'bg-gray-50 border border-gray-200 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer';
+    tarjeta.className = 'bg-gray-50 border border-gray-200 rounded-lg p-4 hover:bg-gray-100 transition-colors';
     tarjeta.innerHTML = `
-      <div class="flex justify-between items-start">
+      <div class="flex flex-col justify-between items-start gap-1">
         <div class="flex-1">
-          <h4 class="font-semibold text-gray-800 mb-1">${producto.NOMBRE}</h4>
-          <p class="text-sm text-gray-600 mb-2">${producto.PRESENTACION}</p>
+          <h4 contenteditable="plaintext-only" class="font-semibold text-gray-800 mb-1 text-sm">${producto.NOMBRE}</h4>
+          <p contenteditable="plaintext-only" class="text-sm text-gray-600 mb-2 block ">${producto.PRESENTACION.trim()}</p>
           <div class="flex gap-4 text-sm">
             <span class="text-blue-600">
               <i class="fas fa-barcode mr-1"></i>
@@ -61,11 +61,10 @@ window.addEventListener('DOMContentLoaded', async () => {
             </span>
           </div>
         </div>
-        <div class="text-right">
-          <div class="text-2xl font-bold text-green-600">${formatearPrecio(producto.PRECIO)}</div>
+        <div class="flex justify-between items-center w-full">
+        <div contenteditable="plaintext-only" class="text-xl font-bold text-green-600">${formatearPrecio(producto.PRECIO)}</div>
           <button class="mt-2 bg-blue-600 text-white px-3 py-1 cursor-pointer rounded text-sm hover:bg-blue-700 transition-colors agregar-etiqueta-btn">
-            <i class="fas fa-plus mr-1"></i>
-            Agregar
+            <i class="fas fa-plus text-sm"></i>
           </button>
         </div>
       </div>
@@ -77,51 +76,9 @@ window.addEventListener('DOMContentLoaded', async () => {
       agregarAImprimir(producto);
     });
 
-    // Evento para seleccionar producto y mostrar vista previa
-    tarjeta.addEventListener('click', () => {
-      seleccionarProducto(producto);
-    });
-
     return tarjeta;
   }
 
-  // Función para seleccionar producto
-  function seleccionarProducto(producto) {
-    productoSeleccionado = producto;
-    mostrarVistaPrevia(producto);
-  }
-
-  // Función para mostrar vista previa
-  function mostrarVistaPrevia(producto) {
-    const tamanoEtiqueta = document.getElementById('tamanoEtiqueta').value;
-
-    let tamanoClase = '';
-    switch (tamanoEtiqueta) {
-      case 'pequena':
-        tamanoClase = 'w-32 h-16';
-        break;
-      case 'mediana':
-        tamanoClase = 'w-48 h-24';
-        break;
-      case 'grande':
-        tamanoClase = 'w-64 h-32';
-        break;
-    }
-
-    etiquetaPreview.innerHTML = `
-      <div class="${tamanoClase} bg-white border-2 border-gray-300 rounded p-2 mx-auto">
-        <div class="text-center">
-          <div class="text-xs font-bold text-gray-800 truncate">${producto.NOMBRE}</div>
-          <div class="text-xs text-gray-600 truncate">${producto.PRESENTACION}</div>
-          <div class="text-lg font-bold text-green-600">${formatearPrecio(producto.PRECIO)}</div>
-          ${producto.CODIGO ? `<div class="text-xs text-blue-600">${producto.CODIGO}</div>` : ''}
-        </div>
-      </div>
-    `;
-
-    vistaPrevia.classList.remove('hidden');
-    vistaPrevia.scrollIntoView({ behavior: 'smooth' });
-  }
 
   // Función para agregar producto a la lista de etiquetas a imprimir
   function agregarAImprimir(producto) {
@@ -292,29 +249,51 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Función para poblar el select de impresoras
-  async function cargarImpresoras() {
-    try {
-      const resultado = await window.api.obtenerImpresoras();
-      if (resultado.success && Array.isArray(resultado.data)) {
-        selectImpresora.innerHTML = '';
-        resultado.data.forEach(impresora => {
-          const option = document.createElement('option');
-          option.value = impresora.name;
-          option.textContent = impresora.name + (impresora.isDefault ? ' (Por defecto)' : '');
-          selectImpresora.appendChild(option);
-        });
-      } else {
-        // Si falla, dejar la opción por defecto
-        selectImpresora.innerHTML = '<option value="default">Impresora por defecto</option>';
-      }
-    } catch (error) {
-      selectImpresora.innerHTML = '<option value="default">Impresora por defecto</option>';
+  // Eliminar función cargarImpresoras y cualquier referencia a window.api.obtenerImpresoras o selectImpresora
+
+  // Lógica para cargar y previsualizar el logo
+  const logoInput = document.getElementById('logoInput');
+  const logoPreview = document.getElementById('logoPreview');
+
+  let logoTemp = null; // base64 temporal
+  let logoTempName = null;
+  let eliminarLogo = false;
+
+  // Actualizar previsualización y mostrar/eliminar icono basurero
+  function mostrarLogoPreview(src) {
+    logoPreview.innerHTML = '';
+    if (src) {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = 'Logo';
+      img.className = 'max-h-24 max-w-full rounded shadow';
+      logoPreview.appendChild(img);
+      // Botón basurero
+      const trash = document.createElement('i');
+      trash.className = 'fas fa-trash text-red-500 cursor-pointer hover:text-red-700 ml-2';
+      trash.title = 'Eliminar logo';
+      trash.onclick = () => {
+        logoTemp = null;
+        logoTempName = null;
+        eliminarLogo = true;
+        mostrarLogoPreview(null);
+      };
+      logoPreview.appendChild(trash);
     }
   }
 
-  // Llamar a cargarImpresoras al iniciar
-  await cargarImpresoras();
+  logoInput.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      logoTemp = e.target.result;
+      logoTempName = file.name;
+      eliminarLogo = false;
+      mostrarLogoPreview(logoTemp);
+    };
+    reader.readAsDataURL(file);
+  });
 
   // Modificar cargarConfiguracion para seleccionar la impresora guardada si existe
   async function cargarConfiguracion() {
@@ -325,9 +304,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (resultado.data.tamanoEtiqueta) {
           document.getElementById('tamanoEtiqueta').value = resultado.data.tamanoEtiqueta;
         }
-        if (resultado.data.impresora) {
-          selectImpresora.value = resultado.data.impresora;
-        }
+        // Eliminar función cargarImpresoras y cualquier referencia a window.api.obtenerImpresoras o selectImpresora
       }
     } catch (error) {
       console.error('Error al cargar configuración:', error);
@@ -352,4 +329,74 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Inicializar
   cargarConfiguracion();
+
+  // Mostrar logo guardado si existe y setear tamaño de etiqueta guardado
+  const config = await window.api.obtenerConfiguracion();
+  if (config) {
+    if (config.logoPath) {
+      logoTemp = null;
+      logoTempName = null;
+      eliminarLogo = false;
+      mostrarLogoPreview(config.logoPath);
+    }
+    if (config.tamanoEtiqueta) {
+      const selectTamano = document.getElementById('tamanoEtiqueta');
+      selectTamano.value = config.tamanoEtiqueta;
+    }
+  }
+
+  // Modal de confirmación
+  const modalConfirmacion = document.getElementById('modalConfirmacion');
+  const mensajeConfirmacion = document.getElementById('mensajeConfirmacion');
+  const btnCerrarConfirmacion = document.getElementById('btnCerrarConfirmacion');
+
+  function mostrarConfirmacion(mensaje, exito = true) {
+    mensajeConfirmacion.textContent = mensaje;
+    mensajeConfirmacion.className = exito
+      ? 'text-green-700 text-lg font-semibold mb-4 text-center'
+      : 'text-red-700 text-lg font-semibold mb-4 text-center';
+    modalConfirmacion.classList.remove('hidden');
+    modalConfirmacion.classList.add('flex');
+  }
+
+  function ocultarConfirmacion() {
+    modalConfirmacion.classList.add('hidden');
+    modalConfirmacion.classList.remove('flex');
+  }
+
+  btnCerrarConfirmacion.addEventListener('click', ocultarConfirmacion);
+  modalConfirmacion.addEventListener('click', (e) => {
+    if (e.target === modalConfirmacion) ocultarConfirmacion();
+  });
+
+  // Guardar configuración
+  const btnGuardarConfig = document.getElementById('btnGuardarConfig');
+  btnGuardarConfig.addEventListener('click', async () => {
+    const tamanoEtiqueta = document.getElementById('tamanoEtiqueta').value;
+    let logoPath = null;
+    let resultado;
+    if (eliminarLogo) {
+      // Eliminar logo
+      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, eliminarLogo: true });
+    } else if (logoTemp && logoTempName) {
+      // Guardar logo nuevo
+      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, logo: { name: logoTempName, dataUrl: logoTemp } });
+    } else {
+      // Mantener logo actual
+      const config = await window.api.obtenerConfiguracion();
+      if (config && config.logoPath) {
+        logoPath = config.logoPath;
+      }
+      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, logoPath });
+    }
+    if (resultado && resultado.success) {
+      mostrarConfirmacion('¡Configuración guardada correctamente!', true);
+      // Reset flags
+      eliminarLogo = false;
+      logoTemp = null;
+      logoTempName = null;
+    } else {
+      mostrarConfirmacion('Error al guardar la configuración', false);
+    }
+  });
 });
