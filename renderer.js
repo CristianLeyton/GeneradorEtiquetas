@@ -45,24 +45,27 @@ window.addEventListener('DOMContentLoaded', async () => {
   function crearTarjetaProducto(producto) {
     const tarjeta = document.createElement('div');
     tarjeta.className = 'bg-gray-50 border border-gray-200 rounded-lg p-4 hover:bg-gray-100 transition-colors';
+    // Obtener fecha actual en formato dd/mm/yyyy
+    const hoy = new Date();
+    const fechaHoy = hoy.toLocaleDateString('es-AR');
     tarjeta.innerHTML = `
-      <div class="flex flex-col justify-between items-start gap-1">
+      <div class="flex flex-col justify-center items-start gap-0">
         <div class="flex-1">
-          <h4 contenteditable="plaintext-only" class="font-semibold text-gray-800 mb-1 text-sm">${producto.NOMBRE}</h4>
-          <p contenteditable="plaintext-only" class="text-sm text-gray-600 mb-2 block ">${producto.PRESENTACION.trim()}</p>
+          <h4 contenteditable="plaintext-only" class="font-semibold text-gray-800 mb-1 text-sm editable-nombre">${producto.NOMBRE}</h4>
+          <p contenteditable="plaintext-only" class="text-sm text-gray-600 mb-2 block editable-presentacion">${producto.PRESENTACION.trim()}</p>
           <div class="flex gap-4 text-sm">
-            <span class="text-blue-600">
+            <span class="text-blue-600 editable-codigo">
               <i class="fas fa-barcode mr-1"></i>
               ${producto.CODIGO || 'Sin código'}
             </span>
-            <span class="text-green-600">
-              <i class="fas fa-tag mr-1"></i>
-              ${producto.TROQUEL || 'Sin troquel'}
+            <span class="text-gray-600 editable-fecha">
+              <i class="fas fa-calendar-alt mr-1"></i>
+              <span contenteditable="plaintext-only" class="editable-fecha-inner">${fechaHoy}</span>
             </span>
           </div>
         </div>
         <div class="flex justify-between items-center w-full">
-        <div contenteditable="plaintext-only" class="text-xl font-bold text-green-600">${formatearPrecio(producto.PRECIO)}</div>
+        <div contenteditable="plaintext-only" class="text-xl font-bold text-green-600 editable-precio">${formatearPrecio(producto.PRECIO)}</div>
           <button class="mt-2 bg-blue-600 text-white px-3 py-1 cursor-pointer rounded text-sm hover:bg-blue-700 transition-colors agregar-etiqueta-btn">
             <i class="fas fa-plus text-sm"></i>
           </button>
@@ -73,7 +76,25 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Evento para agregar producto a la lista de etiquetas a imprimir
     tarjeta.querySelector('.agregar-etiqueta-btn').addEventListener('click', (e) => {
       e.stopPropagation();
-      agregarAImprimir(producto);
+      // Tomar los datos editados de la card
+      const nombre = tarjeta.querySelector('.editable-nombre').innerText.trim();
+      const presentacion = tarjeta.querySelector('.editable-presentacion').innerText.trim();
+      const codigo = tarjeta.querySelector('.editable-codigo').innerText.trim();
+      const fecha = tarjeta.querySelector('.editable-fecha-inner').innerText.trim();
+      let precioTexto = tarjeta.querySelector('.editable-precio').innerText.trim();
+      let precio = producto.PRECIO;
+      // Eliminar puntos de miles y reemplazar la coma decimal por punto
+      let match = precioTexto.replace(/\./g, '').replace(',', '.').replace(/[^\d\.]/g, '');
+      if (!isNaN(parseFloat(match))) precio = parseFloat(match);
+      agregarAImprimir({
+        ...producto,
+        NOMBRE: nombre,
+        PRESENTACION: presentacion,
+        CODIGO: codigo === 'Sin código' ? '' : codigo,
+        TROQUEL: '', // Ya no se usa
+        FECHA: fecha,
+        PRECIO: precio
+      });
     });
 
     return tarjeta;
@@ -84,6 +105,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   function agregarAImprimir(producto) {
     etiquetasAImprimir.push(producto);
     mostrarListaEtiquetas();
+    mostrarVistaPreviaEtiquetas();
   }
 
   // Función para mostrar la lista de etiquetas a imprimir
@@ -112,32 +134,97 @@ window.addEventListener('DOMContentLoaded', async () => {
       });
       listaEtiquetas.appendChild(item);
     });
-    listaEtiquetasContainer.classList.remove('hidden');
+
   }
 
   // Función para eliminar producto de la lista de etiquetas a imprimir
   function eliminarDeImprimir(idx) {
     etiquetasAImprimir.splice(idx, 1);
     mostrarListaEtiquetas();
+    mostrarVistaPreviaEtiquetas();
   }
 
-  // Función para imprimir todas las etiquetas
+  // Función para imprimir todas las etiquetas (usando el botón 'Generar Etiqueta')
   async function imprimirTodasEtiquetas() {
     if (etiquetasAImprimir.length === 0) {
       mostrarError('No hay etiquetas para imprimir');
       return;
     }
     try {
-      const resultado = await window.api.generarEtiqueta(etiquetasAImprimir);
-      if (resultado.success) {
-        alert('Etiquetas generadas correctamente');
-        etiquetasAImprimir = [];
-        mostrarListaEtiquetas();
-      } else {
-        mostrarError(`Error al generar etiquetas: ${resultado.error}`);
+      // Pedir impresora al usuario
+      const seleccion = await window.api.seleccionarImpresora();
+      if (!seleccion || !seleccion.printerName) {
+        mostrarError('No se seleccionó ninguna impresora');
+        return;
       }
+      // Dividir etiquetas en páginas de máximo 21 por hoja
+      const etiquetasPorHoja = 21;
+      const etiquetasArr = Array.from(etiquetasAImprimir);
+      const paginas = [];
+      for (let i = 0; i < etiquetasArr.length; i += etiquetasPorHoja) {
+        paginas.push(etiquetasArr.slice(i, i + etiquetasPorHoja));
+      }
+      let paginasHTML = '';
+      paginas.forEach(etis => {
+        const html = etis.map((_, idx) => {
+          // Usar el HTML ya generado en la vista previa
+          return etiquetaPreview.children[idx + paginasHTML.split('a4-sheet').length * etiquetasPorHoja]?.outerHTML || '';
+        }).join('');
+        paginasHTML += `<div class="a4-sheet">${html}</div>`;
+      });
+
+      const printWindow = window.open('', '_blank', 'width=900,height=1300');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Imprimir etiquetas</title>
+            <link rel="stylesheet" href="src/output.css">
+            <link rel="stylesheet" href="src/fontawesome/css/all.min.css">
+            <style>
+              body { background: white; margin: 0; padding: 0; }
+              .a4-sheet {
+                width: 210mm; height: 297mm; margin: 0 auto 24px auto; background: white; box-shadow: 0 0 4px #ccc; padding: 24px 12px; box-sizing: border-box;
+                display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; justify-content: flex-start; gap: 0;
+                page-break-after: always;
+                overflow: visible;
+              }
+              .a4-sheet > * {
+                margin: 0 !important;
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+              #btnPrint { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+              @media print {
+                body, html { width: 210mm; height: 297mm; margin: 0; padding: 0; background: white; }
+                .a4-sheet { box-shadow: none; margin: 0; }
+                #btnPrint { display: none !important; }
+                .a4-sheet { page-break-after: always; }
+              }
+            </style>
+          </head>
+          <body>
+            <button id="btnPrint" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors print:hidden" style="display:block;margin-bottom:24px;">Imprimir</button>
+            ${paginasHTML}
+            <script>
+              document.getElementById('btnPrint').onclick = () => {
+                window.print();
+              };
+              window.onafterprint = () => { window.close(); };
+              if (window.require) {
+                try {
+                  const { remote } = window.require('electron');
+                  if (remote && remote.getCurrentWindow) {
+                    remote.getCurrentWindow().setMenuBarVisibility(false);
+                  }
+                } catch (e) {}
+              }
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
     } catch (error) {
-      mostrarError(`Error al generar etiquetas: ${error.message}`);
+      mostrarError(`Error al imprimir etiquetas: ${error.message}`);
     }
   }
 
@@ -170,7 +257,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   function mostrarResultados(productos) {
     if (productos.length === 0) {
       listaProductos.innerHTML = `
-        <div class="text-center py-8 text-gray-500">
+        <div class="text-center py-8 text-gray-500 col-span-full">
           <i class="fas fa-search text-4xl mb-4"></i>
           <p>No se encontraron productos</p>
         </div>
@@ -206,13 +293,40 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Función para limpiar
+  // Modal de confirmación de limpiar etiquetas
+  const modalConfirmarLimpiar = document.getElementById('modalConfirmarLimpiar');
+  const btnConfirmarLimpiar = document.getElementById('btnConfirmarLimpiar');
+  const btnCancelarLimpiar = document.getElementById('btnCancelarLimpiar');
+
+  function mostrarModalLimpiar() {
+    modalConfirmarLimpiar.classList.remove('hidden');
+    modalConfirmarLimpiar.classList.add('flex');
+  }
+  function ocultarModalLimpiar() {
+    modalConfirmarLimpiar.classList.add('hidden');
+    modalConfirmarLimpiar.classList.remove('flex');
+  }
+  btnCancelarLimpiar.addEventListener('click', ocultarModalLimpiar);
+  modalConfirmarLimpiar.addEventListener('click', (e) => {
+    if (e.target === modalConfirmarLimpiar) ocultarModalLimpiar();
+  });
+  // Modificar función limpiar para mostrar el modal
   function limpiar() {
+    mostrarModalLimpiar();
+    // No limpiar nada aquí, solo mostrar el modal
+  }
+
+  // Mover el reseteo de input y selección al confirmar
+  btnConfirmarLimpiar.addEventListener('click', () => {
+    etiquetasAImprimir = [];
+    mostrarListaEtiquetas();
+    mostrarVistaPreviaEtiquetas();
+    ocultarModalLimpiar();
     terminoBusqueda.value = '';
     productoSeleccionado = null;
     resultadosBusqueda.classList.add('hidden');
     vistaPrevia.classList.add('hidden');
-  }
+  });
 
   // Event Listeners
   btnBuscar.addEventListener('click', buscarProductos);
@@ -223,7 +337,64 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  btnGenerarEtiqueta.addEventListener('click', generarEtiqueta);
+  // Cambiar el texto y funcionalidad del botón 'Generar Etiqueta' a 'Imprimir etiquetas'
+  btnGenerarEtiqueta.innerHTML = '<i class="fas fa-print mr-2"></i>Imprimir etiquetas';
+  btnGenerarEtiqueta.onclick = () => {
+    if (etiquetasAImprimir.length === 0) {
+      mostrarError('No hay etiquetas para imprimir');
+      return;
+    }
+    // Obtener solo el HTML de la vista previa de etiquetas, ocultando los botones de eliminar
+    const etiquetasHTML = etiquetaPreview.innerHTML.replace(/<i class=\"fas fa-trash[\s\S]*?<\/i>/gi, '');
+    const printWindow = window.open('', '_blank', 'width=900,height=1300');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Imprimir etiquetas</title>
+          <link rel="stylesheet" href="src/output.css">
+          <link rel="stylesheet" href="src/fontawesome/css/all.min.css">
+          <style>
+            body { background: white; margin: 0; padding: 0; }
+            .a4-sheet {
+              margin: 0 auto; background: white; box-shadow: 0 0 4px #ccc; padding: 12px 12px; box-sizing: border-box;
+              display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; justify-content: flex-start; gap: 0px;
+              page-break-after: always;
+            }
+            .a4-sheet > * {
+              margin: 0 !important;
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
+            @media print {
+              body, html { width: 210mm; height: 297mm; margin: 0; padding: 0; background: white; }
+              .a4-sheet { box-shadow: none; margin: 0; }
+              #btnPrint { display: none !important; }
+              .a4-sheet { page-break-after: always; }
+            }
+          </style>
+        </head>
+        <body>
+          <button id="btnPrint" class="mt-4 bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors print:hidden" style="display:block;margin:24px auto;">Imprimir</button>
+          <div class"a4-sheet">${etiquetasHTML}</div>
+          <script>
+            document.getElementById('btnPrint').onclick = () => {
+              window.print();
+            };
+            window.onafterprint = () => { window.close(); };
+            if (window.require) {
+              try {
+                const { remote } = window.require('electron');
+                if (remote && remote.getCurrentWindow) {
+                  remote.getCurrentWindow().setMenuBarVisibility(false);
+                }
+              } catch (e) {}
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
   btnLimpiar.addEventListener('click', limpiar);
   btnCerrarError.addEventListener('click', ocultarError);
   btnImprimirTodas.addEventListener('click', imprimirTodasEtiquetas);
@@ -262,13 +433,18 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Actualizar previsualización y mostrar/eliminar icono basurero
   function mostrarLogoPreview(src) {
     logoPreview.innerHTML = '';
-    if (src) {
+    if (src && typeof src === 'string' && src.trim() !== '') {
       const img = document.createElement('img');
-      img.src = src;
+      // Solo agregar ?v=... si no es base64
+      if (src.startsWith('data:image/')) {
+        img.src = src;
+      } else {
+        img.src = src + '?v=' + Date.now();
+      }
       img.alt = 'Logo';
-      img.className = 'max-h-24 max-w-full rounded shadow';
+      img.className = 'block mx-auto rounded shadow object-contain max-h-16 max-w-[120px] bg-white border border-gray-200 p-1';
       logoPreview.appendChild(img);
-      // Botón basurero
+      // Botón basurero solo si hay logo
       const trash = document.createElement('i');
       trash.className = 'fas fa-trash text-red-500 cursor-pointer hover:text-red-700 ml-2';
       trash.title = 'Eliminar logo';
@@ -291,6 +467,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       logoTempName = file.name;
       eliminarLogo = false;
       mostrarLogoPreview(logoTemp);
+      // Forzar refresco de input para permitir cargar el mismo archivo dos veces seguidas
+      logoInput.value = '';
     };
     reader.readAsDataURL(file);
   });
@@ -399,4 +577,199 @@ window.addEventListener('DOMContentLoaded', async () => {
       mostrarConfirmacion('Error al guardar la configuración', false);
     }
   });
+
+  // --- Vista previa de etiquetas a imprimir ---
+  function mostrarVistaPreviaEtiquetas() {
+    const config = window._configCache || {};
+    const logoPath = config.logoPath || null;
+    const tamanoEtiqueta = document.getElementById('tamanoEtiqueta').value;
+    const mostrarSinImp = typeof config.mostrarPrecioSinImpuestos === 'boolean' ? config.mostrarPrecioSinImpuestos : false;
+    etiquetaPreview.innerHTML = '';
+    if (etiquetasAImprimir.length === 0) {
+      vistaPrevia.classList.add('hidden');
+      return;
+    }
+    vistaPrevia.classList.remove('hidden');
+    let sizeClass = '';
+    let customClass = '';
+    if (tamanoEtiqueta === 'pequena') {
+      sizeClass = 'w-48 h-28';
+      customClass = 'etiqueta-pequena';
+    } else if (tamanoEtiqueta === 'mediana') {
+      sizeClass = 'w-56 h-36';
+      customClass = 'etiqueta-mediana';
+    } else {
+      sizeClass = 'w-60 h-28';
+      customClass = 'etiqueta-grande';
+    }
+    etiquetasAImprimir.forEach((producto, idx) => {
+      const div = document.createElement('div');
+      div.className = `relative border border-gray-300 rounded p-2 flex flex-col items-center justify-center bg-white m-[0.25mm] inline-flex ${sizeClass} ${customClass}`;
+      // Logo centrado arriba
+      if (logoPath) {
+        const logo = document.createElement('img');
+        logo.src = logoPath + '?v=' + Date.now();
+        logo.className = 'block mx-auto h-8 w-auto max-w-[60%] object-contain etiqueta-logo';
+        logo.alt = 'Logo';
+        div.appendChild(logo);
+      }
+      // Nombre
+      const nombre = document.createElement('div');
+      nombre.className = 'text-xs font-bold text-center text-gray-800 mt-1 mb-1 break-words etiqueta-nombre';
+      nombre.textContent = producto.NOMBRE;
+      div.appendChild(nombre);
+      // Presentación
+      const presentacion = document.createElement('div');
+      presentacion.className = 'text-[10px] text-center text-gray-600 mb-1 break-words etiqueta-presentacion';
+      presentacion.textContent = producto.PRESENTACION;
+      div.appendChild(presentacion);
+      // Código y Fecha
+      const codetroq = document.createElement('div');
+      codetroq.className = 'flex justify-center gap-2 text-[10px] etiqueta-codetroq';
+      codetroq.innerHTML = `
+        <span class="text-blue-600"><i class="fas fa-barcode mr-1"></i>${producto.CODIGO || 'Sin código'}</span>
+        <span class="text-gray-600"><i class="fas fa-calendar-alt mr-1"></i>${producto.FECHA || fechaActual()}</span>
+      `;
+      div.appendChild(codetroq);
+      // Precios
+      if (mostrarSinImp) {
+        const preciosRow = document.createElement('div');
+        preciosRow.className = 'flex flex-row justify-center items-end gap-5';
+        // Precio sin impuestos
+        const precioSinImp = document.createElement('div');
+        precioSinImp.className = 'text-base font-bold text-blue-700 text-center etiqueta-precio';
+        const valorSinImp = producto.PRECIO * 0.79;
+        precioSinImp.innerHTML = `<div>${formatearPrecio(valorSinImp)}</div><div style="font-size:8px;">Precio sin imp. nac.</div>`;
+        preciosRow.appendChild(precioSinImp);
+        div.appendChild(preciosRow);
+        // Precio normal
+        const precio = document.createElement('div');
+        precio.className = 'text-base font-bold text-green-700 text-center etiqueta-precio';
+        precio.innerHTML = `<div>${formatearPrecio(producto.PRECIO)}</div><div style="font-size:8px;">Precio</div>`;
+        preciosRow.appendChild(precio);
+      } else {
+        // Solo precio normal
+        const precio = document.createElement('div');
+        precio.className = 'text-base font-bold text-green-700 text-center etiqueta-precio';
+        precio.innerHTML = `<div>${formatearPrecio(producto.PRECIO)}</div><div style="font-size:8px;">Precio</div>`;
+        div.appendChild(precio);
+      }
+      // Botón basurero para eliminar etiqueta
+      const trash = document.createElement('i');
+      trash.className = 'fas fa-trash text-red-500 cursor-pointer hover:text-red-700 absolute top-2 right-2 print:hidden';
+      trash.title = 'Eliminar esta etiqueta';
+      trash.onclick = () => {
+        eliminarDeImprimir(idx);
+      };
+      div.appendChild(trash);
+      etiquetaPreview.appendChild(div);
+    });
+  }
+
+  // --- Actualizar config cache y vista previa al cargar config o cambiar tamaño ---
+  window._configCache = await window.api.obtenerConfiguracion();
+  document.getElementById('tamanoEtiqueta').addEventListener('change', () => {
+    window._configCache = window._configCache || {};
+    window._configCache.tamanoEtiqueta = document.getElementById('tamanoEtiqueta').value;
+    mostrarVistaPreviaEtiquetas();
+  });
+
+  // Modificar agregarAImprimir y eliminarDeImprimir para actualizar la vista previa
+  function agregarAImprimir(producto) {
+    etiquetasAImprimir.push(producto);
+    mostrarListaEtiquetas();
+    mostrarVistaPreviaEtiquetas();
+  }
+  function eliminarDeImprimir(idx) {
+    etiquetasAImprimir.splice(idx, 1);
+    mostrarListaEtiquetas();
+    mostrarVistaPreviaEtiquetas();
+  }
+  // Llamar a mostrarVistaPreviaEtiquetas al inicio por si hay etiquetas
+  mostrarVistaPreviaEtiquetas();
+
+  // Al cargar la config, setear el checkbox
+  if (config) {
+    if (config.logoPath) {
+      logoTemp = null;
+      logoTempName = null;
+      eliminarLogo = false;
+      mostrarLogoPreview(config.logoPath);
+    }
+    if (config.tamanoEtiqueta) {
+      const selectTamano = document.getElementById('tamanoEtiqueta');
+      selectTamano.value = config.tamanoEtiqueta;
+    }
+  }
+
+  // Al guardar configuración, guardar el valor del checkbox
+  btnGuardarConfig.addEventListener('click', async () => {
+    const tamanoEtiqueta = document.getElementById('tamanoEtiqueta').value;
+    const mostrarPrecioSinImpuestos = document.getElementById('mostrarPrecioSinImpuestos').checked;
+    let logoPath = null;
+    let resultado;
+    if (eliminarLogo) {
+      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, mostrarPrecioSinImpuestos, eliminarLogo: true });
+    } else if (logoTemp && logoTempName) {
+      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, mostrarPrecioSinImpuestos, logo: { name: logoTempName, dataUrl: logoTemp } });
+    } else {
+      const config = await window.api.obtenerConfiguracion();
+      if (config && config.logoPath) {
+        logoPath = config.logoPath;
+      }
+      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, mostrarPrecioSinImpuestos, logoPath });
+    }
+    if (resultado && resultado.success) {
+      mostrarConfirmacion('¡Configuración guardada correctamente!', true);
+      eliminarLogo = false;
+      logoTemp = null;
+      logoTempName = null;
+      // Actualizar cache y vista previa
+      window._configCache = await window.api.obtenerConfiguracion();
+      mostrarLogoPreview(window._configCache.logoPath || null);
+      mostrarVistaPreviaEtiquetas();
+    } else {
+      mostrarConfirmacion('Error al guardar la configuración', false);
+    }
+  });
+
+  // Actualizar vista previa si se cambia el checkbox
+  document.getElementById('mostrarPrecioSinImpuestos').addEventListener('change', () => {
+    window._configCache = window._configCache || {};
+    window._configCache.mostrarPrecioSinImpuestos = document.getElementById('mostrarPrecioSinImpuestos').checked;
+    mostrarVistaPreviaEtiquetas();
+  });
+
+  // Al cargar la config, setear el checkbox y actualizar la vista previa
+  async function cargarConfigYActualizarUI() {
+    const config = await window.api.obtenerConfiguracion();
+    window._configCache = config || {};
+    if (config) {
+      if (config.logoPath) {
+        logoTemp = null;
+        logoTempName = null;
+        eliminarLogo = false;
+        mostrarLogoPreview(config.logoPath);
+      }
+      if (config.tamanoEtiqueta) {
+        const selectTamano = document.getElementById('tamanoEtiqueta');
+        selectTamano.value = config.tamanoEtiqueta;
+      }
+      if (typeof config.mostrarPrecioSinImpuestos === 'boolean') {
+        document.getElementById('mostrarPrecioSinImpuestos').checked = config.mostrarPrecioSinImpuestos;
+      } else {
+        document.getElementById('mostrarPrecioSinImpuestos').checked = false;
+      }
+      mostrarVistaPreviaEtiquetas();
+    }
+  }
+
+  // Llamar al cargar la app
+  await cargarConfigYActualizarUI();
 });
+
+// Helper para fecha actual
+function fechaActual() {
+  const hoy = new Date();
+  return hoy.toLocaleDateString('es-AR');
+}

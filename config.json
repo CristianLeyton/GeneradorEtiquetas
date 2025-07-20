@@ -1,4 +1,5 @@
 {
-  "tamanoEtiqueta": "grande",
+  "tamanoEtiqueta": "mediana",
+  "mostrarPrecioSinImpuestos": true,
   "logoPath": "src/logo/logo.png"
 }

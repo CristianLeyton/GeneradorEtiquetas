@@ -1,9 +1,55 @@
 @import "tailwindcss";
 
+
 button {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 button:disabled {
-    cursor: not-allowed;
+  cursor: not-allowed;
+}
+
+.etiqueta-pequena {
+
+  & .etiqueta-logo {
+    height: 24px;
+    margin: 0;
+  }
+
+  & .etiqueta-nombre{
+    font-size: 14px;
+    margin: 0;
+  }
+
+  & .etiqueta-presentacion {
+    font-size: 10px;
+    margin: 0;
+  }
+
+  & .etiqueta-precio {
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+.etiqueta-grande {
+  & .etiqueta-logo {
+    height: 24px;
+    margin: 0;
+  }
+
+  & .etiqueta-nombre{
+    font-size: 14px;
+    margin: 0;
+  }
+
+  & .etiqueta-presentacion {
+    font-size: 10px;
+    margin: 0;
+  }
+
+  & .etiqueta-precio {
+    font-size: 14px;
+    margin: 0;
+  }
 }

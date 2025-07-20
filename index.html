@@ -10,7 +10,7 @@
 </head>
 
 <body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto py-6 px-4">
+    <div class=" mx-auto py-6 px-4">
         <!-- Configuración -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">
@@ -18,7 +18,7 @@
                 Configuración
             </h3>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tamaño de etiqueta</label>
                     <select id="tamanoEtiqueta"
@@ -31,29 +31,42 @@
                     </select>
                 </div>
                 <!-- Opción para cargar logo -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Logo</label>
-                    <div class="flex gap-2 items-center">
-                        <label for="logoInput"
-                            class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
-                            <i class="fas fa-upload"></i>
-                            Seleccionar logo
-                        </label>
-                        <input type="file" id="logoInput" accept="image/*" class="hidden" />
-                        <div id="logoPreview" class="h-11 aspect-square flex items-center gap-2">
-                            <i class="fas fa-trash text-red-500 cursor-pointer hover:text-red-700"></i>
+                <div class="flex justify-between flex-wrap gap-3 items-center pr-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Logo</label>
+                        <div class="flex gap-2 items-center">
+                            <label for="logoInput"
+                                class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
+                                <i class="fas fa-upload"></i>
+                                Subir logo
+                            </label>
+                            <input type="file" id="logoInput" accept="image/*" class="hidden" />
+                            <div id="logoPreview" class="h-10 aspect-square flex items-center gap-2">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Checkbox para mostrar precio sin impuestos -->
+                    <div class="">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Precios</label>
+                        <div class="flex items-center h-11">
+                            <input id="mostrarPrecioSinImpuestos" type="checkbox"
+                                class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="mostrarPrecioSinImpuestos" class="text-sm text-gray-700 select-none">Mostrar
+                                precio
+                                sin impuestos.</label>
                         </div>
                     </div>
                 </div>
+
                 <button id="btnGuardarConfig"
                     class="mt-4 bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
                     <i class="fas fa-save mr-2"></i>
                     Guardar configuración
                 </button>
-                <button id="btnImprimirEtiquetas" disabled
+                <button id="btnGuardarEtiquetas" disabled
                     class="mt-4 bg-indigo-600 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400 disabled:opacity-85 text-white px-6 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
-                    <i class="fas fa-print mr-2"></i>
-                    Imprimir etiquetas
+                    <i class="fas fa-save mr-2"></i>
+                    Guardar etiquetas
                 </button>
             </div>
 
@@ -129,27 +142,27 @@
 
                 <!-- Vista Previa de Etiqueta -->
                 <div id="vistaPrevia" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                        <i class="fas fa-eye text-orange-600 mr-2"></i>
-                        Vista Previa de Etiqueta
-                    </h3>
-
-                    <div id="etiquetaPreview" class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
-                        <!-- La vista previa de la etiqueta se cargará aquí -->
-                    </div>
-
-                    <div class="mt-4 flex gap-3">
+                    
+                    <div class="mb-2 flex gap-3 justify-between items-center w-full">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            <i class="fas fa-eye text-orange-600 mr-2"></i>
+                            Vista previa
+                        </h3>
+                        <div class="flex gap-3 justify-between items-center">
                         <button id="btnGenerarEtiqueta"
-                            class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
+                            class="bg-green-600 text-white px-4 py-1.5 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
                             <i class="fas fa-print mr-2"></i>
                             Generar Etiqueta
                         </button>
-
                         <button id="btnLimpiar"
-                            class="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
+                            class="bg-gray-500 text-white px-4 py-1.5 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
                             <i class="fas fa-times mr-2"></i>
                             Limpiar
                         </button>
+                        </div>
+                    </div>
+                    <div id="etiquetaPreview" class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
+                        <!-- La vista previa de la etiqueta se cargará aquí -->
                     </div>
                 </div>
             </div>
@@ -177,6 +190,21 @@
             <div id="mensajeConfirmacion" class="text-green-700 text-lg font-semibold mb-4 text-center"></div>
             <button id="btnCerrarConfirmacion"
                 class="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 focus:outline-none">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación de Limpiar Etiquetas -->
+    <div id="modalConfirmarLimpiar" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full flex flex-col items-center">
+            <div class="text-red-700 text-lg font-semibold mb-4 text-center">¿Deseas limpiar todas las etiquetas a
+                imprimir?</div>
+            <div class="flex gap-4">
+                <button id="btnConfirmarLimpiar"
+                    class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 focus:outline-none">Sí,
+                    limpiar</button>
+                <button id="btnCancelarLimpiar"
+                    class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 focus:outline-none">Cancelar</button>
+            </div>
         </div>
     </div>
 

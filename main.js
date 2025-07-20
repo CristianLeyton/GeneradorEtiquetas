@@ -8,8 +8,8 @@ let mainWindow;
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: 1366,
+        height: 768,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -219,6 +219,13 @@ ipcMain.handle('guardar-configuracion', async (event, nuevaConfig) => {
         }
         // Guardar logo nuevo si se proporciona
         if (nuevaConfig.logo) {
+            // Eliminar logo anterior si existe
+            if (config.logoPath) {
+                const oldLogoFullPath = path.join(__dirname, config.logoPath);
+                if (fs.existsSync(oldLogoFullPath)) {
+                    fs.unlinkSync(oldLogoFullPath);
+                }
+            }
             const logoDir = path.join(__dirname, 'src', 'logo');
             if (!fs.existsSync(logoDir)) {
                 fs.mkdirSync(logoDir, { recursive: true });
@@ -237,10 +244,35 @@ ipcMain.handle('guardar-configuracion', async (event, nuevaConfig) => {
         if (config.logoPath && !nuevaConfig.logoPath) {
             nuevaConfig.logoPath = config.logoPath;
         }
+        // Mantener mostrarPrecioSinImpuestos si ya existe y no viene en la nueva config
+        if (typeof config.mostrarPrecioSinImpuestos === 'boolean' && typeof nuevaConfig.mostrarPrecioSinImpuestos !== 'boolean') {
+            nuevaConfig.mostrarPrecioSinImpuestos = config.mostrarPrecioSinImpuestos;
+        }
         fs.writeFileSync(configPath, JSON.stringify(nuevaConfig, null, 2));
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('seleccionar-impresora', async () => {
+    try {
+        if (!mainWindow) throw new Error('Ventana principal no disponible');
+        const printers = mainWindow.webContents.getPrinters();
+        // Mostrar un cuadro de selección simple usando dialog.showMessageBox
+        const printerNames = printers.map(p => p.name);
+        const { response } = await dialog.showMessageBox(mainWindow, {
+            type: 'question',
+            buttons: printerNames,
+            title: 'Seleccionar impresora',
+            message: '¿A qué impresora deseas enviar las etiquetas?'
+        });
+        if (typeof response === 'number' && printerNames[response]) {
+            return { printerName: printerNames[response] };
+        }
+        return { printerName: null };
+    } catch (error) {
+        return { printerName: null, error: error.message };
     }
 });
 

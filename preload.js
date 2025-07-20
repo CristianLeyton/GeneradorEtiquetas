@@ -10,4 +10,5 @@ contextBridge.exposeInMainWorld('api', {
   guardarLogo: (fileData) => ipcRenderer.invoke('guardar-logo', fileData),
   obtenerConfiguracion: () => ipcRenderer.invoke('obtener-configuracion'),
   guardarConfiguracion: (config) => ipcRenderer.invoke('guardar-configuracion', config),
+  seleccionarImpresora: () => ipcRenderer.invoke('seleccionar-impresora'),
 });
