@@ -620,7 +620,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       // Presentación
       const presentacion = document.createElement('div');
       presentacion.className = 'text-[10px] text-center text-gray-600 mb-1 break-words etiqueta-presentacion';
-      presentacion.textContent = producto.PRESENTACION;
+      presentacion.textContent = `${producto.PRESENTACION || "-"}`;
       div.appendChild(presentacion);
       // Código y Fecha
       const codetroq = document.createElement('div');

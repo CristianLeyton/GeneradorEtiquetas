@@ -158,6 +158,7 @@ async function buscarProductos(termino) {
                 WHERE UPPER(NOMBRE) LIKE UPPER(?) 
                 OR CODIGO = ?
                 OR TROQUEL = ?
+                AND (MENSAJES IS NULL OR MENSAJES NOT IN (512, 768))
                 ORDER BY NOMBRE 
                 ROWS 50
             `;
@@ -167,6 +168,7 @@ async function buscarProductos(termino) {
                 SELECT ID, NOMBRE, PRESENTACION, PRECIO, TROQUEL, CODIGO 
                 FROM PRODUCTO 
                 WHERE UPPER(NOMBRE) LIKE UPPER(?)
+                AND (MENSAJES IS NULL OR MENSAJES NOT IN (512, 768))
                 ORDER BY NOMBRE 
                 ROWS 50
             `;
@@ -192,6 +194,7 @@ async function buscarProductoPorIdYCodigo({ ID, CODIGO }) {
             SELECT ID, NOMBRE, PRESENTACION, PRECIO, TROQUEL, CODIGO 
             FROM PRODUCTO 
             WHERE ID = ? AND CODIGO = ?
+            AND (MENSAJES IS NULL OR MENSAJES NOT IN (512, 768))
             ROWS 1
         `;
         db.query(query, [ID, CODIGO], (err, result) => {
