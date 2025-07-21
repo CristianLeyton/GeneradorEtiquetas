@@ -603,7 +603,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     etiquetasAImprimir.forEach(async (producto, idx) => {
       const div = document.createElement('div');
-      div.className = `relative border border-gray-300 rounded p-2 flex flex-col items-center justify-center bg-white m-[0.25mm] inline-flex ${sizeClass} ${customClass}`;
+      div.className = `relative overflow-hidden border border-gray-300 rounded p-0 flex flex-col items-center justify-center bg-white m-[0.25mm] inline-flex ${sizeClass} ${customClass}`;
       // Logo centrado arriba
       if (logoPath) {
         const logo = document.createElement('img');
@@ -614,7 +614,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
       // Nombre
       const nombre = document.createElement('div');
-      nombre.className = 'text-xs font-bold text-center text-gray-800 mt-1 mb-1 break-words etiqueta-nombre';
+      nombre.className = 'text-xs font-bold text-center text-gray-800 mt-1 mb-1 line-clamp-1 overflow-hidden text-ellipsis etiqueta-nombre';
       nombre.textContent = producto.NOMBRE;
       div.appendChild(nombre);
       // Presentación

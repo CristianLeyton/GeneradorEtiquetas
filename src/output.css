@@ -764,6 +764,24 @@
   .box-content {
     box-sizing: content-box;
   }
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
   .line-clamp-none {
     overflow: visible;
     display: block;
@@ -1519,6 +1537,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .overflow-hidden {
+    overflow: hidden;
+  }
+  .overflow-x-auto {
+    overflow-x: auto;
+  }
   .scroll-auto {
     scroll-behavior: auto;
   }
@@ -2094,6 +2118,9 @@
   }
   .object-top-right {
     object-position: right top;
+  }
+  .p-0 {
+    padding: calc(var(--spacing) * 0);
   }
   .p-1 {
     padding: calc(var(--spacing) * 1);
@@ -2920,6 +2947,11 @@
       --tw-ring-color: var(--color-green-500);
     }
   }
+  .focus\:ring-indigo-500 {
+    &:focus {
+      --tw-ring-color: var(--color-indigo-500);
+    }
+  }
   .focus\:ring-red-500 {
     &:focus {
       --tw-ring-color: var(--color-red-500);
@@ -2999,7 +3031,7 @@ button:disabled {
     margin: 0;
   }
   & .etiqueta-nombre {
-    font-size: 14px;
+    font-size: 12px;
     margin: 0;
   }
   & .etiqueta-presentacion {
@@ -3017,7 +3049,7 @@ button:disabled {
     margin: 0;
   }
   & .etiqueta-nombre {
-    font-size: 14px;
+    font-size: 12px;
     margin: 0;
   }
   & .etiqueta-presentacion {
