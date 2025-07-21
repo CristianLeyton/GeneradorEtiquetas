@@ -5,15 +5,31 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "author": "Cristian Diego Leyton",
   "license": "ISC",
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "electron": "^37.2.3",
+    "electron-builder": "^26.0.12",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11"
+  },
+  "build": {
+    "appId": "com.generadoretiquetas.app",
+    "productName": "Generador de etiquetas Winfarma",
+    "files": [
+      "**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "win": {
+      "target": "nsis"
+    }
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.11",

@@ -174,6 +174,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       });
 
       const printWindow = window.open('', '_blank', 'width=900,height=1300');
+      printWindow.setMenu(null);
       printWindow.document.write(`
         <html>
           <head>
@@ -238,7 +239,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Mostrar loading
     loading.classList.remove('hidden');
     resultadosBusqueda.classList.add('hidden');
-    vistaPrevia.classList.add('hidden');
     try {
       const resultado = await window.api.buscarProducto(termino);
       if (resultado.success) {
@@ -338,7 +338,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Cambiar el texto y funcionalidad del botón 'Generar Etiqueta' a 'Imprimir etiquetas'
-  btnGenerarEtiqueta.innerHTML = '<i class="fas fa-print mr-2"></i>Imprimir etiquetas';
+  btnGenerarEtiqueta.innerHTML = '<i class="fas fa-print mr-2"></i>Imprimir';
   btnGenerarEtiqueta.onclick = () => {
     if (etiquetasAImprimir.length === 0) {
       mostrarError('No hay etiquetas para imprimir');
@@ -431,15 +431,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   let eliminarLogo = false;
 
   // Actualizar previsualización y mostrar/eliminar icono basurero
-  function mostrarLogoPreview(src) {
+  async function mostrarLogoPreview(src) {
     logoPreview.innerHTML = '';
     if (src && typeof src === 'string' && src.trim() !== '') {
       const img = document.createElement('img');
-      // Solo agregar ?v=... si no es base64
       if (src.startsWith('data:image/')) {
         img.src = src;
       } else {
-        img.src = src + '?v=' + Date.now();
+        img.src = await window.api.obtenerLogoPath(src) + '?v=' + Date.now();
       }
       img.alt = 'Logo';
       img.className = 'block mx-auto rounded shadow object-contain max-h-16 max-w-[120px] bg-white border border-gray-200 p-1';
@@ -568,18 +567,18 @@ window.addEventListener('DOMContentLoaded', async () => {
       resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, logoPath });
     }
     if (resultado && resultado.success) {
-      mostrarConfirmacion('¡Configuración guardada correctamente!', true);
+      mostrarToast('¡Configuración guardada correctamente!');
       // Reset flags
       eliminarLogo = false;
       logoTemp = null;
       logoTempName = null;
     } else {
-      mostrarConfirmacion('Error al guardar la configuración', false);
+      mostrarError('Error al guardar la configuración', false);
     }
   });
 
   // --- Vista previa de etiquetas a imprimir ---
-  function mostrarVistaPreviaEtiquetas() {
+  async function mostrarVistaPreviaEtiquetas() {
     const config = window._configCache || {};
     const logoPath = config.logoPath || null;
     const tamanoEtiqueta = document.getElementById('tamanoEtiqueta').value;
@@ -602,13 +601,13 @@ window.addEventListener('DOMContentLoaded', async () => {
       sizeClass = 'w-60 h-28';
       customClass = 'etiqueta-grande';
     }
-    etiquetasAImprimir.forEach((producto, idx) => {
+    etiquetasAImprimir.forEach(async (producto, idx) => {
       const div = document.createElement('div');
       div.className = `relative border border-gray-300 rounded p-2 flex flex-col items-center justify-center bg-white m-[0.25mm] inline-flex ${sizeClass} ${customClass}`;
       // Logo centrado arriba
       if (logoPath) {
         const logo = document.createElement('img');
-        logo.src = logoPath + '?v=' + Date.now();
+        logo.src = await window.api.obtenerLogoPath(logoPath) + '?v=' + Date.now();
         logo.className = 'block mx-auto h-8 w-auto max-w-[60%] object-contain etiqueta-logo';
         logo.alt = 'Logo';
         div.appendChild(logo);
@@ -720,7 +719,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, mostrarPrecioSinImpuestos, logoPath });
     }
     if (resultado && resultado.success) {
-      mostrarConfirmacion('¡Configuración guardada correctamente!', true);
+      mostrarToast('¡Configuración guardada correctamente!');
       eliminarLogo = false;
       logoTemp = null;
       logoTempName = null;
@@ -729,7 +728,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       mostrarLogoPreview(window._configCache.logoPath || null);
       mostrarVistaPreviaEtiquetas();
     } else {
-      mostrarConfirmacion('Error al guardar la configuración', false);
+      mostrarError('Error al guardar la configuración', false);
     }
   });
 
@@ -766,10 +765,327 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Llamar al cargar la app
   await cargarConfigYActualizarUI();
+
+  // --- ESTANTERÍAS ---
+  let estanteriaActual = null; // { nombre, etiquetas }
+
+  // Elementos
+  const btnGuardarEstanteria = document.getElementById('btnGuardarEstanteria');
+  const btnCargarEstanteria = document.getElementById('btnCargarEstanteria');
+  const btnActualizarPrecios = document.getElementById('btnActualizarPrecios');
+  const modalGuardarEstanteria = document.getElementById('modalGuardarEstanteria');
+  const inputNombreEstanteria = document.getElementById('inputNombreEstanteria');
+  const btnCancelarGuardarEstanteria = document.getElementById('btnCancelarGuardarEstanteria');
+  const btnConfirmarGuardarEstanteria = document.getElementById('btnConfirmarGuardarEstanteria');
+  const modalCargarEstanteria = document.getElementById('modalCargarEstanteria');
+  const selectEstanteria = document.getElementById('selectEstanteria');
+  const btnCancelarCargarEstanteria = document.getElementById('btnCancelarCargarEstanteria');
+  const btnConfirmarCargarEstanteria = document.getElementById('btnConfirmarCargarEstanteria');
+  const btnNuevaEstanteria = document.getElementById('btnNuevaEstanteria');
+
+  // Mostrar/ocultar modales
+  function mostrarModalGuardarEstanteria() {
+    inputNombreEstanteria.value = '';
+    modalGuardarEstanteria.classList.remove('hidden');
+    modalGuardarEstanteria.classList.add('flex');
+    inputNombreEstanteria.focus();
+  }
+  function ocultarModalGuardarEstanteria() {
+    modalGuardarEstanteria.classList.add('hidden');
+    modalGuardarEstanteria.classList.remove('flex');
+  }
+  function mostrarModalCargarEstanteria() {
+    modalCargarEstanteria.classList.remove('hidden');
+    modalCargarEstanteria.classList.add('flex');
+  }
+  function ocultarModalCargarEstanteria() {
+    modalCargarEstanteria.classList.add('hidden');
+    modalCargarEstanteria.classList.remove('flex');
+  }
+
+  // Guardar estantería
+  btnGuardarEstanteria.addEventListener('click', async () => {
+    if (etiquetasAImprimir.length === 0) {
+      mostrarError('No hay etiquetas para guardar');
+      return;
+    }
+    if (estanteriaActual && estanteriaActual.nombre) {
+      // Guardar directo
+      const etiquetas = etiquetasAImprimir.map(e => ({ ...e }));
+      const res = await window.api.guardarEstanteria({ nombre: estanteriaActual.nombre, etiquetas });
+      if (res && res.success) {
+        mostrarToast('¡Estantería actualizada correctamente!');
+        estanteriaActual.etiquetas = etiquetas;
+        btnActualizarPrecios.classList.remove('hidden');
+      } else {
+        mostrarError('Error al guardar la estantería');
+      }
+    } else {
+      mostrarModalGuardarEstanteria();
+    }
+  });
+  btnCancelarGuardarEstanteria.addEventListener('click', ocultarModalGuardarEstanteria);
+  btnConfirmarGuardarEstanteria.addEventListener('click', async () => {
+    const nombre = inputNombreEstanteria.value.trim();
+    if (!nombre) {
+      inputNombreEstanteria.focus();
+      return;
+    }
+    const etiquetas = etiquetasAImprimir.map(e => ({ ...e }));
+    const res = await window.api.guardarEstanteria({ nombre, etiquetas });
+    if (res && res.success) {
+      mostrarToast('¡Estantería guardada correctamente!');
+      estanteriaActual = { nombre, etiquetas };
+      btnActualizarPrecios.classList.remove('hidden');
+    } else {
+      mostrarError('Error al guardar la estantería');
+    }
+    ocultarModalGuardarEstanteria();
+  });
+
+  // Cargar estantería
+  btnCargarEstanteria.addEventListener('click', async () => {
+    const estanterias = await window.api.cargarEstanterias();
+    selectEstanteria.innerHTML = '';
+    if (!estanterias || estanterias.length === 0) {
+      mostrarError('No hay estanterías guardadas');
+      return;
+    }
+    estanterias.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.nombre;
+      opt.textContent = e.nombre;
+      selectEstanteria.appendChild(opt);
+    });
+    // Seleccionar por defecto la estantería actual si existe
+    if (estanteriaActual && estanteriaActual.nombre) {
+      selectEstanteria.value = estanteriaActual.nombre;
+    }
+    mostrarModalCargarEstanteria();
+  });
+  btnCancelarCargarEstanteria.addEventListener('click', ocultarModalCargarEstanteria);
+  btnConfirmarCargarEstanteria.addEventListener('click', async () => {
+    const nombre = selectEstanteria.value;
+    const estanterias = await window.api.cargarEstanterias();
+    const est = estanterias.find(e => e.nombre === nombre);
+    if (est) {
+      etiquetasAImprimir = est.etiquetas.map(e => ({ ...e }));
+      estanteriaActual = { nombre: est.nombre, etiquetas: etiquetasAImprimir };
+      mostrarListaEtiquetas();
+      mostrarVistaPreviaEtiquetas();
+      btnActualizarPrecios.classList.remove('hidden');
+      mostrarToast('Estantería cargada');
+    } else {
+      mostrarError('No se encontró la estantería seleccionada');
+    }
+    ocultarModalCargarEstanteria();
+  });
+
+  // Actualizar precios
+  btnActualizarPrecios.addEventListener('click', async () => {
+    if (!etiquetasAImprimir.length) return;
+    btnActualizarPrecios.disabled = true;
+    btnActualizarPrecios.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Cargando...';
+    try {
+      const actualizadas = await window.api.actualizarPreciosEstanteria(etiquetasAImprimir);
+      etiquetasAImprimir = actualizadas;
+      if (estanteriaActual) estanteriaActual.etiquetas = actualizadas;
+      mostrarListaEtiquetas();
+      mostrarVistaPreviaEtiquetas();
+      mostrarToast('Precios actualizados');
+    } catch (e) {
+      mostrarError('Error al actualizar precios');
+    }
+    btnActualizarPrecios.disabled = false;
+    btnActualizarPrecios.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Act. precios';
+  });
+
+  // Ocultar botón actualizar precios si no hay estantería cargada
+  function actualizarBotonActualizarPrecios() {
+    if (etiquetasAImprimir.length > 0 && estanteriaActual) {
+      btnActualizarPrecios.classList.remove('hidden');
+    } else {
+      btnActualizarPrecios.classList.add('hidden');
+    }
+  }
+  // --- Habilitar/deshabilitar botón Guardar Estantería según la cantidad de etiquetas ---
+  function actualizarBotonGuardarEstanteria() {
+    if (etiquetasAImprimir.length > 0) {
+      btnGuardarEstanteria.disabled = false;
+    } else {
+      btnGuardarEstanteria.disabled = true;
+    }
+  }
+  // Llamar cada vez que cambia la lista
+  const _oldMostrarListaEtiquetas2 = mostrarListaEtiquetas;
+  mostrarListaEtiquetas = function () {
+    _oldMostrarListaEtiquetas2();
+    actualizarBotonActualizarPrecios();
+    actualizarBotonGuardarEstanteria();
+  };
+  // Llamar al inicio
+  actualizarBotonGuardarEstanteria();
+
+  // --- Editar y eliminar estantería en el modal ---
+  const btnEditarNombreEstanteria = document.getElementById('btnEditarNombreEstanteria');
+  const btnEliminarEstanteria = document.getElementById('btnEliminarEstanteria');
+  const editarNombreEstanteriaContainer = document.getElementById('editarNombreEstanteriaContainer');
+  const inputNuevoNombreEstanteria = document.getElementById('inputNuevoNombreEstanteria');
+  const btnCancelarEditarNombreEstanteria = document.getElementById('btnCancelarEditarNombreEstanteria');
+  const btnConfirmarEditarNombreEstanteria = document.getElementById('btnConfirmarEditarNombreEstanteria');
+
+  let nombreEstanteriaAEditar = null;
+
+  btnEditarNombreEstanteria.addEventListener('click', () => {
+    nombreEstanteriaAEditar = selectEstanteria.value;
+    inputNuevoNombreEstanteria.value = nombreEstanteriaAEditar;
+    editarNombreEstanteriaContainer.classList.remove('hidden');
+    inputNuevoNombreEstanteria.focus();
+  });
+  btnCancelarEditarNombreEstanteria.addEventListener('click', () => {
+    editarNombreEstanteriaContainer.classList.add('hidden');
+    nombreEstanteriaAEditar = null;
+  });
+  btnConfirmarEditarNombreEstanteria.addEventListener('click', async () => {
+    const nombreNuevo = inputNuevoNombreEstanteria.value.trim();
+    if (!nombreNuevo || nombreNuevo === nombreEstanteriaAEditar) return;
+    const res = await window.api.renombrarEstanteria({ nombreViejo: nombreEstanteriaAEditar, nombreNuevo });
+    if (res && res.success) {
+      mostrarToast('Nombre actualizado');
+      // Actualizar selector
+      const estanterias = await window.api.cargarEstanterias();
+      selectEstanteria.innerHTML = '';
+      estanterias.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.nombre;
+        opt.textContent = e.nombre;
+        selectEstanteria.appendChild(opt);
+      });
+      selectEstanteria.value = nombreNuevo;
+    } else {
+      mostrarError(res.error || 'Error al renombrar');
+    }
+    editarNombreEstanteriaContainer.classList.add('hidden');
+    nombreEstanteriaAEditar = null;
+  });
+
+  // --- Modal de confirmación para eliminar estantería ---
+  const modalConfirmarEliminarEstanteria = document.getElementById('modalConfirmarEliminarEstanteria');
+  const mensajeEliminarEstanteria = document.getElementById('mensajeEliminarEstanteria');
+  const btnCancelarEliminarEstanteria = document.getElementById('btnCancelarEliminarEstanteria');
+  const btnConfirmarEliminarEstanteria = document.getElementById('btnConfirmarEliminarEstanteria');
+  let nombreEstanteriaAEliminar = null;
+  let modalAnteriorActivo = null;
+
+  function mostrarModalConfirmarEliminar(nombre) {
+    nombreEstanteriaAEliminar = nombre;
+    mensajeEliminarEstanteria.textContent = `¿Seguro que deseas eliminar la estantería "${nombre}"?`;
+    // Guardar cuál modal estaba activo
+    if (!modalConfirmarEliminarEstanteria.classList.contains('flex')) {
+      if (editarNombreEstanteriaContainer && !editarNombreEstanteriaContainer.classList.contains('hidden')) {
+        modalAnteriorActivo = editarNombreEstanteriaContainer;
+        editarNombreEstanteriaContainer.classList.add('hidden');
+      } else if (modalCargarEstanteria && modalCargarEstanteria.classList.contains('flex')) {
+        modalAnteriorActivo = modalCargarEstanteria;
+        modalCargarEstanteria.classList.remove('flex');
+        modalCargarEstanteria.classList.add('hidden');
+      } else {
+        modalAnteriorActivo = null;
+      }
+    }
+    modalConfirmarEliminarEstanteria.classList.remove('hidden');
+    modalConfirmarEliminarEstanteria.classList.add('flex');
+    modalConfirmarEliminarEstanteria.style.zIndex = 1000;
+  }
+  function ocultarModalConfirmarEliminar() {
+    modalConfirmarEliminarEstanteria.classList.add('hidden');
+    modalConfirmarEliminarEstanteria.classList.remove('flex');
+    modalConfirmarEliminarEstanteria.style.zIndex = 60;
+    // Restaurar el modal anterior si corresponde
+    if (modalAnteriorActivo) {
+      modalAnteriorActivo.classList.remove('hidden');
+      if (modalAnteriorActivo !== editarNombreEstanteriaContainer) {
+        modalAnteriorActivo.classList.add('flex');
+      }
+      modalAnteriorActivo = null;
+    }
+  }
+  btnCancelarEliminarEstanteria.addEventListener('click', ocultarModalConfirmarEliminar);
+  btnConfirmarEliminarEstanteria.addEventListener('click', async () => {
+    if (!nombreEstanteriaAEliminar) return;
+    const res = await window.api.eliminarEstanteria(nombreEstanteriaAEliminar);
+    if (res && res.success) {
+      mostrarToast('Estantería eliminada');
+      // Actualizar selector
+      const estanterias = await window.api.cargarEstanterias();
+      selectEstanteria.innerHTML = '';
+      estanterias.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.nombre;
+        opt.textContent = e.nombre;
+        selectEstanteria.appendChild(opt);
+      });
+      if (estanterias.length === 0) ocultarModalCargarEstanteria();
+    } else {
+      mostrarError('Error al eliminar la estantería');
+    }
+    ocultarModalConfirmarEliminar();
+  });
+
+  // Modificar el botón Eliminar para usar el modal
+  btnEliminarEstanteria.addEventListener('click', () => {
+    const nombre = selectEstanteria.value;
+    mostrarModalConfirmarEliminar(nombre);
+  });
+
+  // Eliminar listeners duplicados para btnGuardarEstanteria
+  // Primero, quitar todos los listeners previos (si los hay)
+  // (No se puede quitar listeners anónimos, así que asegúrate de tener solo uno aquí)
+  // Deja solo el siguiente listener:
+  btnGuardarEstanteria.addEventListener('click', async () => {
+    if (etiquetasAImprimir.length === 0) {
+      mostrarError('No hay etiquetas para guardar');
+      return;
+    }
+    if (estanteriaActual && estanteriaActual.nombre) {
+      // Guardar directo
+      const etiquetas = etiquetasAImprimir.map(e => ({ ...e }));
+      const res = await window.api.guardarEstanteria({ nombre: estanteriaActual.nombre, etiquetas });
+      if (res && res.success) {
+        mostrarToast('¡Estantería actualizada correctamente!');
+        estanteriaActual.etiquetas = etiquetas;
+        btnActualizarPrecios.classList.remove('hidden');
+      } else {
+        mostrarError('Error al guardar la estantería');
+      }
+    } else {
+      mostrarModalGuardarEstanteria();
+    }
+  });
+
+  // Event Listener para el botón 'Nueva estantería'
+  btnNuevaEstanteria.addEventListener('click', () => {
+    estanteriaActual = null;
+    mostrarToast('Ahora puedes guardar una nueva estantería con las etiquetas actuales.');
+    actualizarBotonActualizarPrecios();
+  });
 });
 
 // Helper para fecha actual
 function fechaActual() {
   const hoy = new Date();
   return hoy.toLocaleDateString('es-AR');
+}
+
+// --- Toast de notificación ---
+const toastNotificacion = document.getElementById('toastNotificacion');
+let toastTimeout = null;
+function mostrarToast(mensaje, color = 'bg-green-600') {
+  toastNotificacion.textContent = mensaje;
+  toastNotificacion.className = `fixed top-6 right-6 z-[2000] text-white px-6 py-3 rounded shadow-lg opacity-75 pointer-events-auto transition-opacity duration-300 ${color}`;
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toastNotificacion.classList.add('opacity-0');
+    toastNotificacion.classList.remove('opacity-75');
+  }, 2000);
 }

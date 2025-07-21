@@ -11,4 +11,10 @@ contextBridge.exposeInMainWorld('api', {
   obtenerConfiguracion: () => ipcRenderer.invoke('obtener-configuracion'),
   guardarConfiguracion: (config) => ipcRenderer.invoke('guardar-configuracion', config),
   seleccionarImpresora: () => ipcRenderer.invoke('seleccionar-impresora'),
+  guardarEstanteria: ({ nombre, etiquetas }) => ipcRenderer.invoke('guardar-estanteria', { nombre, etiquetas }),
+  cargarEstanterias: () => ipcRenderer.invoke('cargar-estanterias'),
+  actualizarPreciosEstanteria: (etiquetas) => ipcRenderer.invoke('actualizar-precios-estanteria', etiquetas),
+  eliminarEstanteria: (nombre) => ipcRenderer.invoke('eliminar-estanteria', nombre),
+  renombrarEstanteria: ({ nombreViejo, nombreNuevo }) => ipcRenderer.invoke('renombrar-estanteria', { nombreViejo, nombreNuevo }),
+  obtenerLogoPath: (logoPath) => ipcRenderer.invoke('obtener-logo-path', logoPath),
 });

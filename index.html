@@ -59,15 +59,28 @@
                 </div>
 
                 <button id="btnGuardarConfig"
-                    class="mt-4 bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                    class="mt-4 bg-green-600 text-white px-4 py-1.5 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
                     <i class="fas fa-save mr-2"></i>
                     Guardar configuración
                 </button>
-                <button id="btnGuardarEtiquetas" disabled
-                    class="mt-4 bg-indigo-600 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400 disabled:opacity-85 text-white px-6 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
-                    <i class="fas fa-save mr-2"></i>
-                    Guardar etiquetas
-                </button>
+                <!-- Reemplazar el botón Guardar etiquetas por los nuevos botones -->
+                <div class="flex gap-3 justify-between items-center">
+                    <button id="btnCargarEstanteria"
+                        class="mt-4 w-full bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                        <i class="fas fa-folder-open mr-2"></i>
+                        Cargar estantería
+                    </button>
+                    <button id="btnNuevaEstanteria"
+                        class="mt-4 w-full bg-gray-500 text-white px-4 py-1.5 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Nueva estantería
+                    </button>
+                    <button id="btnGuardarEstanteria" disabled
+                        class="mt-4 w-full bg-indigo-600 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400 disabled:opacity-85 text-white px-4 py-1.5 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        Guardar estantería
+                    </button>
+                </div>
             </div>
 
 
@@ -142,23 +155,27 @@
 
                 <!-- Vista Previa de Etiqueta -->
                 <div id="vistaPrevia" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
-                    
+
                     <div class="mb-2 flex gap-3 justify-between items-center w-full">
                         <h3 class="text-lg font-semibold text-gray-800">
                             <i class="fas fa-eye text-orange-600 mr-2"></i>
                             Vista previa
                         </h3>
                         <div class="flex gap-3 justify-between items-center">
-                        <button id="btnGenerarEtiqueta"
-                            class="bg-green-600 text-white px-4 py-1.5 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
-                            <i class="fas fa-print mr-2"></i>
-                            Generar Etiqueta
-                        </button>
-                        <button id="btnLimpiar"
-                            class="bg-gray-500 text-white px-4 py-1.5 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
-                            <i class="fas fa-times mr-2"></i>
-                            Limpiar
-                        </button>
+                            <button id="btnActualizarPrecios"
+                                class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors hidden">
+                                <i class="fas fa-sync-alt mr-2"></i>Act. Precios
+                            </button>
+                            <button id="btnGenerarEtiqueta"
+                                class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
+                                <i class="fas fa-print mr-2"></i>
+                                Generar Etiqueta
+                            </button>
+                            <button id="btnLimpiar"
+                                class="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
+                                <i class="fas fa-times mr-2"></i>
+                                Limpiar
+                            </button>
                         </div>
                     </div>
                     <div id="etiquetaPreview" class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
@@ -206,6 +223,72 @@
                     class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 focus:outline-none">Cancelar</button>
             </div>
         </div>
+    </div>
+
+    <!-- Modal para guardar estantería -->
+    <div id="modalGuardarEstanteria" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm flex flex-col items-center">
+            <h4 class="text-lg font-semibold mb-4">Guardar estantería</h4>
+            <input id="inputNombreEstanteria" type="text" class="border rounded px-3 py-2 w-full mb-4"
+                placeholder="Nombre de la estantería">
+            <div class="flex gap-3 w-full justify-end">
+                <button id="btnCancelarGuardarEstanteria"
+                    class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancelar</button>
+                <button id="btnConfirmarGuardarEstanteria"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para cargar estantería -->
+    <div id="modalCargarEstanteria" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm flex flex-col items-center">
+            <h4 class="text-lg font-semibold mb-4">Cargar estantería</h4>
+            <select id="selectEstanteria" class="border rounded px-3 py-2 w-full mb-4"></select>
+            <div id="editarNombreEstanteriaContainer" class="w-full mb-2 hidden flex-col gap-2">
+                <input id="inputNuevoNombreEstanteria" type="text" class="border rounded px-3 py-2 w-full mb-2"
+                    placeholder="Nuevo nombre">
+                <div class="flex gap-2 w-full justify-end">
+                    <button id="btnCancelarEditarNombreEstanteria"
+                        class="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500">Cancelar</button>
+                    <button id="btnConfirmarEditarNombreEstanteria"
+                        class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">Guardar</button>
+                </div>
+            </div>
+            <div class="flex gap-2 w-full justify-between mb-2">
+                <button id="btnEditarNombreEstanteria"
+                    class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">Editar nombre</button>
+                <button id="btnEliminarEstanteria"
+                    class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Eliminar</button>
+            </div>
+            <div class="flex gap-3 w-full justify-end">
+                <button id="btnCancelarCargarEstanteria"
+                    class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancelar</button>
+                <button id="btnConfirmarCargarEstanteria"
+                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Cargar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar estantería -->
+    <div id="modalConfirmarEliminarEstanteria"
+        class="fixed inset-0 bg-black/60 z-60 hidden items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm flex flex-col items-center">
+            <h4 class="text-lg font-semibold mb-4 text-red-700">Eliminar estantería</h4>
+            <p id="mensajeEliminarEstanteria" class="mb-6 text-center text-gray-700">¿Seguro que deseas eliminar la
+                estantería?</p>
+            <div class="flex gap-3 w-full justify-end">
+                <button id="btnCancelarEliminarEstanteria"
+                    class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancelar</button>
+                <button id="btnConfirmarEliminarEstanteria"
+                    class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast de notificación -->
+    <div id="toastNotificacion"
+        class="fixed top-6 right-6 z-[2000] bg-green-600 text-white px-6 py-3 rounded shadow-lg opacity-0 pointer-events-none transition-opacity duration-300">
     </div>
 
     <script src="renderer.js"></script>

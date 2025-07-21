@@ -53,3 +53,7 @@ button:disabled {
     margin: 0;
   }
 }
+
+body::-webkit-menu-bar {
+  display: none !important;
+}
