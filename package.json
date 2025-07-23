@@ -1,6 +1,6 @@
 {
   "name": "generadoretiquetas",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Generar etiquetas desde la base de precios del winfarma",
   "main": "main.js",
   "scripts": {

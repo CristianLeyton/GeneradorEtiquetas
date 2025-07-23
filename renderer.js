@@ -188,7 +188,7 @@ window.addEventListener('DOMContentLoaded', async () => {
               body { background: white; margin: 0; padding: 0; }
               .a4-sheet {
                 width: 210mm; height: 297mm; margin: 0 auto 24px auto; background: white; box-shadow: 0 0 4px #ccc; margin: 0px 0px; box-sizing: border-box;
-                display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; justify-content: flex-start; gap: 0;
+                display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; justify-content: flex-start; gap: 3px;
                 page-break-after: always;
                 overflow: visible;
               }
@@ -361,9 +361,10 @@ window.addEventListener('DOMContentLoaded', async () => {
           <style>
             body { background: white; margin: 0; padding: 0; }
             .a4-sheet {
-              margin: 0 auto; background: white; box-shadow: 0 0 4px #ccc; margin: 12px 12px; box-sizing: border-box;
-              display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; justify-content: flex-start; gap: 0px;
+              width: 210mm; height: 297mm; margin: 0 auto; background: white; box-sizing: border-box;
+              display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; justify-content: flex-start; gap: 3px;
               page-break-after: always;
+              overflow: visible;
             }
             .a4-sheet > * {
               margin: 0 !important;
@@ -380,7 +381,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         </head>
         <body>
           <button id="btnPrint" class="mt-4 bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors print:hidden" style="display:block;margin:24px auto;">Imprimir</button>
-          <div class"a4-sheet">${etiquetasHTML}</div>
+          <div class="a4-sheet">${etiquetasHTML}</div>
           <script>
             document.getElementById('btnPrint').onclick = () => {
               window.print();
