@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 button {
   cursor: pointer;
 }
@@ -10,13 +9,12 @@ button:disabled {
 }
 
 .etiqueta-pequena {
-
   & .etiqueta-logo {
     height: 24px;
     margin: 0;
   }
 
-  & .etiqueta-nombre{
+  & .etiqueta-nombre {
     font-size: 12px;
     margin: 0;
   }
@@ -38,7 +36,7 @@ button:disabled {
     margin: 0;
   }
 
-  & .etiqueta-nombre{
+  & .etiqueta-nombre {
     font-size: 12px;
     margin: 0;
   }
@@ -59,17 +57,15 @@ body::-webkit-menu-bar {
 }
 
 @font-face {
-  font-family: 'BarCode';
-  src: url('./fonts/code128.ttf') format('truetype');
+  font-family: "BarCode";
+  src: url("./fonts/codeEAN13.ttf") format("truetype");
 }
 
 .barcode {
-  font-family: 'BarCode', sans-serif;
+  font-family: "BarCode", sans-serif;
   font-size: 16px;
 
   & i {
     display: none;
   }
-
 }
-

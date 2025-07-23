@@ -187,7 +187,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             <style>
               body { background: white; margin: 0; padding: 0; }
               .a4-sheet {
-                width: 210mm; height: 297mm; margin: 0 auto 24px auto; background: white; box-shadow: 0 0 4px #ccc; padding: 24px 12px; box-sizing: border-box;
+                width: 210mm; height: 297mm; margin: 0 auto 24px auto; background: white; box-shadow: 0 0 4px #ccc; margin: 0px 0px; box-sizing: border-box;
                 display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; justify-content: flex-start; gap: 0;
                 page-break-after: always;
                 overflow: visible;
@@ -235,6 +235,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Función para buscar productos
   async function buscarProductos() {
     const termino = terminoBusqueda.value.trim();
+    // Usar el ID del laboratorio seleccionado, o null si no hay
+    const laboratorioId = laboratorioSeleccionado || null;
     if (!termino) {
       mostrarError('Por favor ingrese un término de búsqueda');
       return;
@@ -243,7 +245,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     loading.classList.remove('hidden');
     resultadosBusqueda.classList.add('hidden');
     try {
-      const resultado = await window.api.buscarProducto(termino);
+      const resultado = await window.api.buscarProducto(termino, laboratorioId);
       if (resultado.success) {
         mostrarResultados(resultado.data);
       } else {
@@ -359,7 +361,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           <style>
             body { background: white; margin: 0; padding: 0; }
             .a4-sheet {
-              margin: 0 auto; background: white; box-shadow: 0 0 4px #ccc; padding: 12px 12px; box-sizing: border-box;
+              margin: 0 auto; background: white; box-shadow: 0 0 4px #ccc; margin: 12px 12px; box-sizing: border-box;
               display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; justify-content: flex-start; gap: 0px;
               page-break-after: always;
             }
@@ -586,6 +588,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     const logoPath = config.logoPath || null;
     const tamanoEtiqueta = document.getElementById('tamanoEtiqueta').value;
     const mostrarSinImp = typeof config.mostrarPrecioSinImpuestos === 'boolean' ? config.mostrarPrecioSinImpuestos : false;
+    // Leer el valor actual del checkbox directamente
+    const mostrarCodigoBarrasSVG = document.getElementById('mostrarCodigoBarrasSVG').checked;
     etiquetaPreview.innerHTML = '';
     if (etiquetasAImprimir.length === 0) {
       vistaPrevia.classList.add('hidden');
@@ -595,13 +599,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     let sizeClass = '';
     let customClass = '';
     if (tamanoEtiqueta === 'pequena') {
-      sizeClass = 'w-[189px] h-[113px]';
+      sizeClass = 'w-[205px] h-[120px]'; // 192x112px
       customClass = 'etiqueta-pequena';
     } else if (tamanoEtiqueta === 'mediana') {
-      sizeClass = 'w-[220px] h-[151px]';
+      sizeClass = 'w-[245px] h-[160px]'; // 224x144px
       customClass = 'etiqueta-mediana';
     } else {
-      sizeClass = 'w-[227px] h-[113px]';
+      sizeClass = 'w-[245px] h-[120px]'; // 224x112px
       customClass = 'etiqueta-grande';
     }
     etiquetasAImprimir.forEach(async (producto, idx) => {
@@ -617,21 +621,64 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
       // Nombre
       const nombre = document.createElement('div');
-      nombre.className = 'text-xs font-bold text-center text-gray-800 line-clamp-1 overflow-hidden text-ellipsis etiqueta-nombre';
+      nombre.className = 'text-sm font-bold text-center text-gray-800 line-clamp-1 overflow-hidden text-ellipsis etiqueta-nombre';
       nombre.textContent = producto.NOMBRE;
       div.appendChild(nombre);
       // Presentación
       const presentacion = document.createElement('div');
-      presentacion.className = 'text-[10px] text-center text-gray-600 break-words etiqueta-presentacion';
+      presentacion.className = 'text-[11px] text-center bg-transparent text-gray-600 break-words etiqueta-presentacion';
       presentacion.textContent = `${producto.PRESENTACION || "-"}`;
       div.appendChild(presentacion);
       // Código y Fecha
-      const codetroq = document.createElement('div');
-      codetroq.className = 'flex justify-center items-center gap-4 text-[10px] mt-0 etiqueta-codetroq';
-      codetroq.innerHTML = `
-        <span class="text-blue-600 inline-block"><i class="fas fa-barcode mr-1"></i>${producto.CODIGO || 'Sin código'}</span>
-        <span class="text-gray-600 inline-block"><i class="fas fa-calendar-alt mr-1"></i>${producto.FECHA || fechaActual()}</span>
-      `;
+      let codetroq;
+      let fechaSpan;
+      if (mostrarCodigoBarrasSVG && producto.CODIGO && /^[0-9]{12,13}$/.test(producto.CODIGO)) {
+        // Fecha en esquina superior izquierda (absoluta)
+        fechaSpan = document.createElement('span');
+        fechaSpan.className = 'absolute top-1 left-2 text-[11px] text-gray-600';
+        fechaSpan.innerHTML = `<i class=\"fas fa-calendar-alt mr-1\"></i>${producto.FECHA || fechaActual()}`;
+        div.appendChild(fechaSpan);
+        codetroq = document.createElement('div');
+        codetroq.className = 'flex flex-col items-center gap-0 text-[11px] mt-0 -mb-1 etiqueta-codetroq';
+      } else {
+        codetroq = document.createElement('div');
+        codetroq.className = 'flex flex-row items-center gap-4 text-[11px] mt-0 etiqueta-codetroq';
+      }
+      if (mostrarCodigoBarrasSVG && producto.CODIGO && /^[0-9]{12,13}$/.test(producto.CODIGO)) {
+        // SVG con JsBarcode
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('jsbarcode-value', producto.CODIGO);
+        svg.setAttribute('height', '18');
+        svg.setAttribute('width', '100');
+        svg.style.display = 'block';
+        svg.style.margin = '0 auto';
+        svg.style.padding = '0';
+        svg.style.verticalAlign = 'top';
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.setAttribute('viewBox', '0 0 100 18');
+        window.JsBarcode(svg, producto.CODIGO, { format: 'EAN13', width: 2, height: 18, displayValue: false, margin: 0 });
+        // Reducir solo un poco la altura de las guard bars (las más largas)
+        const bars = svg.querySelectorAll('rect');
+        bars.forEach(bar => {
+          const h = parseFloat(bar.getAttribute('height'));
+          if (h > 18) {
+            bar.setAttribute('height', '20'); // Un poco más alto que las normales
+            bar.setAttribute('y', '0');
+          }
+        });
+        codetroq.appendChild(svg);
+      } else {
+        // Solo número, igual estilo que la fecha
+        const span = document.createElement('span');
+        span.className = 'text-[11px] text-blue-600';
+        span.innerHTML = `<i class=\"fas fa-barcode mr-1\"></i>${producto.CODIGO || ''}`;
+        codetroq.appendChild(span);
+        // Fecha junto al número
+        fechaSpan = document.createElement('span');
+        fechaSpan.className = 'text-[11px] text-gray-600';
+        fechaSpan.innerHTML = `<i class=\"fas fa-calendar-alt mr-1\"></i>${producto.FECHA || fechaActual()}`;
+        codetroq.appendChild(fechaSpan);
+      }
       div.appendChild(codetroq);
       // Precios
       if (mostrarSinImp) {
@@ -639,21 +686,21 @@ window.addEventListener('DOMContentLoaded', async () => {
         preciosRow.className = 'flex flex-row justify-center items-end gap-5';
         // Precio sin impuestos
         const precioSinImp = document.createElement('div');
-        precioSinImp.className = 'text-base font-bold text-blue-700 text-center etiqueta-precio';
+        precioSinImp.className = 'text-md font-bold text-blue-700 text-center etiqueta-precio';
         const valorSinImp = producto.PRECIO * 0.79;
-        precioSinImp.innerHTML = `<div>${formatearPrecio(valorSinImp)}</div><div style="font-size:8px;">Precio sin imp. nac.</div>`;
+        precioSinImp.innerHTML = `<div>${formatearPrecio(valorSinImp)}</div><div style="font-size:10px;">Precio sin imp. nac.</div>`;
         preciosRow.appendChild(precioSinImp);
         div.appendChild(preciosRow);
         // Precio normal
         const precio = document.createElement('div');
-        precio.className = 'text-base font-bold text-green-700 text-center etiqueta-precio';
-        precio.innerHTML = `<div>${formatearPrecio(producto.PRECIO)}</div><div style="font-size:8px;">Precio</div>`;
+        precio.className = 'text-md font-bold text-green-700 text-center etiqueta-precio';
+        precio.innerHTML = `<div>${formatearPrecio(producto.PRECIO)}</div><div style="font-size:10px;">Precio</div>`;
         preciosRow.appendChild(precio);
       } else {
         // Solo precio normal
         const precio = document.createElement('div');
-        precio.className = 'text-base font-bold text-green-700 text-center etiqueta-precio';
-        precio.innerHTML = `<div>${formatearPrecio(producto.PRECIO)}</div><div style="font-size:8px;">Precio</div>`;
+        precio.className = 'text-md font-bold text-green-700 text-center etiqueta-precio';
+        precio.innerHTML = `<div>${formatearPrecio(producto.PRECIO)}</div><div style="font-size:10px;">Precio</div>`;
         div.appendChild(precio);
       }
       // Botón basurero para eliminar etiqueta
@@ -708,18 +755,19 @@ window.addEventListener('DOMContentLoaded', async () => {
   btnGuardarConfig.addEventListener('click', async () => {
     const tamanoEtiqueta = document.getElementById('tamanoEtiqueta').value;
     const mostrarPrecioSinImpuestos = document.getElementById('mostrarPrecioSinImpuestos').checked;
+    const mostrarCodigoBarrasSVG = document.getElementById('mostrarCodigoBarrasSVG').checked;
     let logoPath = null;
     let resultado;
     if (eliminarLogo) {
-      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, mostrarPrecioSinImpuestos, eliminarLogo: true });
+      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, mostrarPrecioSinImpuestos, mostrarCodigoBarrasSVG, eliminarLogo: true });
     } else if (logoTemp && logoTempName) {
-      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, mostrarPrecioSinImpuestos, logo: { name: logoTempName, dataUrl: logoTemp } });
+      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, mostrarPrecioSinImpuestos, mostrarCodigoBarrasSVG, logo: { name: logoTempName, dataUrl: logoTemp } });
     } else {
       const config = await window.api.obtenerConfiguracion();
       if (config && config.logoPath) {
         logoPath = config.logoPath;
       }
-      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, mostrarPrecioSinImpuestos, logoPath });
+      resultado = await window.api.guardarConfiguracion({ tamanoEtiqueta, mostrarPrecioSinImpuestos, mostrarCodigoBarrasSVG, logoPath });
     }
     if (resultado && resultado.success) {
       mostrarToast('¡Configuración guardada correctamente!');
@@ -742,6 +790,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     mostrarVistaPreviaEtiquetas();
   });
 
+  // Actualizar vista previa si se cambia el checkbox de mostrarCodigoBarrasSVG
+  document.getElementById('mostrarCodigoBarrasSVG').addEventListener('change', () => {
+    mostrarVistaPreviaEtiquetas();
+  });
+
   // Al cargar la config, setear el checkbox y actualizar la vista previa
   async function cargarConfigYActualizarUI() {
     const config = await window.api.obtenerConfiguracion();
@@ -761,6 +814,11 @@ window.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('mostrarPrecioSinImpuestos').checked = config.mostrarPrecioSinImpuestos;
       } else {
         document.getElementById('mostrarPrecioSinImpuestos').checked = false;
+      }
+      if (typeof config.mostrarCodigoBarrasSVG === 'boolean') {
+        document.getElementById('mostrarCodigoBarrasSVG').checked = config.mostrarCodigoBarrasSVG;
+      } else {
+        document.getElementById('mostrarCodigoBarrasSVG').checked = false;
       }
       mostrarVistaPreviaEtiquetas();
     }
@@ -1071,6 +1129,69 @@ window.addEventListener('DOMContentLoaded', async () => {
     estanteriaActual = null;
     mostrarToast('Ahora puedes guardar una nueva estantería con las etiquetas actuales.');
     actualizarBotonActualizarPrecios();
+  });
+
+  // --- Autocomplete de laboratorios ---
+  const inputLaboratorio = document.getElementById('inputLaboratorio');
+  const sugerenciasLaboratorio = document.getElementById('sugerenciasLaboratorio');
+  let laboratorios = [];
+  let laboratorioSeleccionado = null;
+  // --- JsBarcode ---
+  let JsBarcode = null;
+  // Eliminar import('jsbarcode') y jsBarcodeReady
+
+  // Cargar todos los laboratorios al iniciar
+  async function cargarLaboratorios() {
+    const res = await window.api.obtenerLaboratorios();
+    if (res.success) {
+      laboratorios = res.data;
+    }
+  }
+  cargarLaboratorios();
+
+  // Mostrar sugerencias al escribir
+  inputLaboratorio.addEventListener('input', () => {
+    const texto = inputLaboratorio.value.trim().toLowerCase();
+    if (!texto) {
+      sugerenciasLaboratorio.innerHTML = '';
+      sugerenciasLaboratorio.classList.add('hidden');
+      laboratorioSeleccionado = null;
+      return;
+    }
+    // Filtrar laboratorios por texto
+    const sugerencias = laboratorios.filter(lab =>
+      lab.DESCRIPCION.toLowerCase().includes(texto)
+    ).slice(0, 15); // Máximo 15 sugerencias
+
+    if (sugerencias.length === 0) {
+      sugerenciasLaboratorio.innerHTML = '<div class="px-3 py-2 text-gray-500">Sin resultados</div>';
+      sugerenciasLaboratorio.classList.remove('hidden');
+      laboratorioSeleccionado = null;
+      return;
+    }
+
+    sugerenciasLaboratorio.innerHTML = sugerencias.map(lab =>
+      `<div class="px-3 py-2 cursor-pointer hover:bg-blue-100" data-id="${lab.ID}" data-nombre="${lab.DESCRIPCION}">${lab.DESCRIPCION}</div>`
+    ).join('');
+    sugerenciasLaboratorio.classList.remove('hidden');
+    laboratorioSeleccionado = null;
+  });
+
+  // Seleccionar laboratorio al hacer click en sugerencia
+  sugerenciasLaboratorio.addEventListener('click', (e) => {
+    const div = e.target.closest('div[data-id]');
+    if (div) {
+      inputLaboratorio.value = div.dataset.nombre;
+      laboratorioSeleccionado = parseInt(div.dataset.id, 10);
+      sugerenciasLaboratorio.classList.add('hidden');
+    }
+  });
+
+  // Ocultar sugerencias si se hace click fuera
+  document.addEventListener('click', (e) => {
+    if (!inputLaboratorio.contains(e.target) && !sugerenciasLaboratorio.contains(e.target)) {
+      sugerenciasLaboratorio.classList.add('hidden');
+    }
   });
 });
 

@@ -2,7 +2,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   // Buscar productos por término (inteligente)
-  buscarProducto: (termino) => ipcRenderer.invoke('buscar-producto', { termino }),
+  obtenerLaboratorios: () => ipcRenderer.invoke('obtener-laboratorios'),
+  buscarProducto: (termino, laboratorioId) => ipcRenderer.invoke('buscar-producto', { termino, laboratorioId }),
 
   // Generar etiqueta para un producto
   generarEtiqueta: (producto) => ipcRenderer.invoke('generar-etiqueta', producto),

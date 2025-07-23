@@ -89,13 +89,13 @@ function createWindow() {
                         mainWindow.reload();
                     },
                 },
-                /*                 {
-                                    label: 'DevTools',
-                                    accelerator: 'F12',
-                                    click: () => {
-                                        mainWindow.webContents.openDevTools();
-                                    },
-                                }, */
+                {
+                    label: 'DevTools',
+                    accelerator: 'F12',
+                    click: () => {
+                        mainWindow.webContents.openDevTools();
+                    },
+                },
                 {
                     label: 'Exit',
                     accelerator: 'CmdOrCtrl+Q',
@@ -140,16 +140,31 @@ function conectarDB() {
     });
 }
 
-// Función para buscar productos (ahora incluye LABORATORIO y nombre del laboratorio)
-async function buscarProductos(termino) {
+// Función para obtener laboratorios
+async function obtenerLaboratorios() {
+    const db = await conectarDB();
+    return new Promise((resolve, reject) => {
+        db.query('SELECT ID, DESCRIPCION FROM LABORATORIOS ORDER BY DESCRIPCION', [], (err, result) => {
+            db.detach();
+            if (err) reject(err);
+            else resolve(result);
+        });
+    });
+}
+
+// Modificar buscarProductos para aceptar laboratorioId
+async function buscarProductos(termino, laboratorioId = null) {
     const db = await conectarDB();
 
     return new Promise((resolve, reject) => {
         let query = '';
         let params = [];
-
-        // Verifica si el término es numérico
         const isNumeric = !isNaN(termino);
+
+        let laboratorioFilter = '';
+        if (laboratorioId) {
+            laboratorioFilter = ' AND P.LABORATORIO = ? ';
+        }
 
         if (isNumeric) {
             query = `
@@ -160,10 +175,12 @@ async function buscarProductos(termino) {
                 OR P.CODIGO = ?
                 OR P.TROQUEL = ?)
                 AND (P.MENSAJES IS NULL OR P.MENSAJES NOT IN (512, 768))
+                ${laboratorioFilter}
                 ORDER BY P.NOMBRE 
                 ROWS 50
             `;
             params = [`${termino}%`, Number(termino), Number(termino)];
+            if (laboratorioId) params.push(Number(laboratorioId));
         } else {
             query = `
                 SELECT P.ID, P.NOMBRE, P.PRESENTACION, P.PRECIO, P.TROQUEL, P.CODIGO, P.LABORATORIO, L.DESCRIPCION AS LABORATORIO_NOMBRE
@@ -171,19 +188,18 @@ async function buscarProductos(termino) {
                 LEFT JOIN LABORATORIOS L ON P.LABORATORIO = L.ID
                 WHERE UPPER(P.NOMBRE) LIKE UPPER(?)
                 AND (P.MENSAJES IS NULL OR P.MENSAJES NOT IN (512, 768))
+                ${laboratorioFilter}
                 ORDER BY P.NOMBRE 
                 ROWS 50
             `;
             params = [`${termino}%`];
+            if (laboratorioId) params.push(Number(laboratorioId));
         }
 
         db.query(query, params, (err, result) => {
             db.detach();
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
+            if (err) reject(err);
+            else resolve(result);
         });
     });
 }
@@ -213,9 +229,9 @@ async function buscarProductoPorLaboratorioYCodigo({ LABORATORIO, CODIGO }) {
 
 
 // Handlers de IPC
-ipcMain.handle('buscar-producto', async (event, { termino }) => {
+ipcMain.handle('buscar-producto', async (event, { termino, laboratorioId }) => {
     try {
-        const productos = await buscarProductos(termino);
+        const productos = await buscarProductos(termino, laboratorioId);
         return { success: true, data: productos };
     } catch (error) {
         return { success: false, error: error.message };
@@ -412,6 +428,15 @@ ipcMain.handle('renombrar-estanteria', async (event, { nombreViejo, nombreNuevo 
         return { success: true };
     }
     return { success: false, error: 'No se encontró la estantería' };
+});
+
+ipcMain.handle('obtener-laboratorios', async () => {
+    try {
+        const labs = await obtenerLaboratorios();
+        return { success: true, data: labs };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
 });
 
 ipcMain.handle('obtener-logo-path', async (event, logoPath) => {

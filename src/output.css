@@ -229,6 +229,9 @@
   .inset-0 {
     inset: calc(var(--spacing) * 0);
   }
+  .top-1 {
+    top: calc(var(--spacing) * 1);
+  }
   .top-2 {
     top: calc(var(--spacing) * 2);
   }
@@ -240,6 +243,9 @@
   }
   .right-6 {
     right: calc(var(--spacing) * 6);
+  }
+  .left-2 {
+    left: calc(var(--spacing) * 2);
   }
   .z-50 {
     z-index: 50;
@@ -283,6 +289,9 @@
   .mr-3 {
     margin-right: calc(var(--spacing) * 3);
   }
+  .-mb-1 {
+    margin-bottom: calc(var(--spacing) * -1);
+  }
   .mb-1 {
     margin-bottom: calc(var(--spacing) * 1);
   }
@@ -316,9 +325,6 @@
   .hidden {
     display: none;
   }
-  .inline-block {
-    display: inline-block;
-  }
   .inline-flex {
     display: inline-flex;
   }
@@ -340,26 +346,17 @@
   .h-10 {
     height: calc(var(--spacing) * 10);
   }
-  .h-11 {
-    height: calc(var(--spacing) * 11);
+  .h-\[120px\] {
+    height: 120px;
   }
-  .h-28 {
-    height: calc(var(--spacing) * 28);
-  }
-  .h-36 {
-    height: calc(var(--spacing) * 36);
-  }
-  .h-\[113px\] {
-    height: 113px;
-  }
-  .h-\[151px\] {
-    height: 151px;
+  .h-\[160px\] {
+    height: 160px;
   }
   .max-h-16 {
     max-height: calc(var(--spacing) * 16);
   }
-  .max-h-40 {
-    max-height: calc(var(--spacing) * 40);
+  .max-h-48 {
+    max-height: calc(var(--spacing) * 48);
   }
   .min-h-screen {
     min-height: 100vh;
@@ -370,20 +367,14 @@
   .w-6 {
     width: calc(var(--spacing) * 6);
   }
-  .w-48 {
-    width: calc(var(--spacing) * 48);
+  .w-64 {
+    width: calc(var(--spacing) * 64);
   }
-  .w-56 {
-    width: calc(var(--spacing) * 56);
+  .w-\[205px\] {
+    width: 205px;
   }
-  .w-\[189px\] {
-    width: 189px;
-  }
-  .w-\[220px\] {
-    width: 220px;
-  }
-  .w-\[227px\] {
-    width: 227px;
+  .w-\[245px\] {
+    width: 245px;
   }
   .w-auto {
     width: auto;
@@ -561,6 +552,9 @@
   .bg-red-600 {
     background-color: var(--color-red-600);
   }
+  .bg-transparent {
+    background-color: transparent;
+  }
   .bg-white {
     background-color: var(--color-white);
   }
@@ -652,8 +646,8 @@
     font-size: var(--text-xs);
     line-height: var(--tw-leading, var(--text-xs--line-height));
   }
-  .text-\[10px\] {
-    font-size: 10px;
+  .text-\[11px\] {
+    font-size: 11px;
   }
   .font-bold {
     --tw-font-weight: var(--font-weight-bold);
@@ -979,11 +973,11 @@ body::-webkit-menu-bar {
   display: none !important;
 }
 @font-face {
-  font-family: 'BarCode';
-  src: url('./fonts/code128.ttf') format('truetype');
+  font-family: "BarCode";
+  src: url("./fonts/codeEAN13.ttf") format("truetype");
 }
 .barcode {
-  font-family: 'BarCode', sans-serif;
+  font-family: "BarCode", sans-serif;
   font-size: 16px;
   & i {
     display: none;
