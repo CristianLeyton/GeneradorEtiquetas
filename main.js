@@ -140,7 +140,7 @@ function conectarDB() {
     });
 }
 
-// Función para buscar productos
+// Función para buscar productos (ahora incluye LABORATORIO y nombre del laboratorio)
 async function buscarProductos(termino) {
     const db = await conectarDB();
 
@@ -153,23 +153,25 @@ async function buscarProductos(termino) {
 
         if (isNumeric) {
             query = `
-                SELECT ID, NOMBRE, PRESENTACION, PRECIO, TROQUEL, CODIGO 
-                FROM PRODUCTO 
-                WHERE UPPER(NOMBRE) LIKE UPPER(?) 
-                OR CODIGO = ?
-                OR TROQUEL = ?
-                AND (MENSAJES IS NULL OR MENSAJES NOT IN (512, 768))
-                ORDER BY NOMBRE 
+                SELECT P.ID, P.NOMBRE, P.PRESENTACION, P.PRECIO, P.TROQUEL, P.CODIGO, P.LABORATORIO, L.DESCRIPCION AS LABORATORIO_NOMBRE
+                FROM PRODUCTO P
+                LEFT JOIN LABORATORIOS L ON P.LABORATORIO = L.ID
+                WHERE (UPPER(P.NOMBRE) LIKE UPPER(?) 
+                OR P.CODIGO = ?
+                OR P.TROQUEL = ?)
+                AND (P.MENSAJES IS NULL OR P.MENSAJES NOT IN (512, 768))
+                ORDER BY P.NOMBRE 
                 ROWS 50
             `;
             params = [`${termino}%`, Number(termino), Number(termino)];
         } else {
             query = `
-                SELECT ID, NOMBRE, PRESENTACION, PRECIO, TROQUEL, CODIGO 
-                FROM PRODUCTO 
-                WHERE UPPER(NOMBRE) LIKE UPPER(?)
-                AND (MENSAJES IS NULL OR MENSAJES NOT IN (512, 768))
-                ORDER BY NOMBRE 
+                SELECT P.ID, P.NOMBRE, P.PRESENTACION, P.PRECIO, P.TROQUEL, P.CODIGO, P.LABORATORIO, L.DESCRIPCION AS LABORATORIO_NOMBRE
+                FROM PRODUCTO P
+                LEFT JOIN LABORATORIOS L ON P.LABORATORIO = L.ID
+                WHERE UPPER(P.NOMBRE) LIKE UPPER(?)
+                AND (P.MENSAJES IS NULL OR P.MENSAJES NOT IN (512, 768))
+                ORDER BY P.NOMBRE 
                 ROWS 50
             `;
             params = [`${termino}%`];
@@ -186,18 +188,19 @@ async function buscarProductos(termino) {
     });
 }
 
-// Función para buscar producto por ID Y CODIGO
-async function buscarProductoPorIdYCodigo({ ID, CODIGO }) {
+// Nueva función para buscar producto por LABORATORIO y CODIGO
+async function buscarProductoPorLaboratorioYCodigo({ LABORATORIO, CODIGO }) {
     const db = await conectarDB();
     return new Promise((resolve, reject) => {
         let query = `
-            SELECT ID, NOMBRE, PRESENTACION, PRECIO, TROQUEL, CODIGO 
-            FROM PRODUCTO 
-            WHERE ID = ? AND CODIGO = ?
-            AND (MENSAJES IS NULL OR MENSAJES NOT IN (512, 768))
+            SELECT P.ID, P.NOMBRE, P.PRESENTACION, P.PRECIO, P.TROQUEL, P.CODIGO, P.LABORATORIO, L.DESCRIPCION AS LABORATORIO_NOMBRE
+            FROM PRODUCTO P
+            LEFT JOIN LABORATORIOS L ON P.LABORATORIO = L.ID
+            WHERE P.LABORATORIO = ? AND P.CODIGO = ?
+            AND (P.MENSAJES IS NULL OR P.MENSAJES NOT IN (512, 768))
             ROWS 1
         `;
-        db.query(query, [ID, CODIGO], (err, result) => {
+        db.query(query, [LABORATORIO, CODIGO], (err, result) => {
             db.detach();
             if (err) {
                 reject(err);
@@ -207,6 +210,7 @@ async function buscarProductoPorIdYCodigo({ ID, CODIGO }) {
         });
     });
 }
+
 
 // Handlers de IPC
 ipcMain.handle('buscar-producto', async (event, { termino }) => {
@@ -368,11 +372,11 @@ ipcMain.handle('cargar-estanterias', async () => {
     return JSON.parse(fs.readFileSync(estanteriasPath, 'utf8'));
 });
 
-// Handler para actualizar precios de una estantería
+// Handler para actualizar precios de una estantería (ahora usa LABORATORIO y CODIGO)
 ipcMain.handle('actualizar-precios-estanteria', async (event, etiquetas) => {
-    // Para cada etiqueta, busca el producto por ID Y CODIGO y actualiza el precio
+    // Para cada etiqueta, busca el producto por LABORATORIO Y CODIGO y actualiza el precio
     const actualizadas = await Promise.all(etiquetas.map(async (etiqueta) => {
-        const productoBD = await buscarProductoPorIdYCodigo({ ID: etiqueta.ID, CODIGO: etiqueta.CODIGO });
+        const productoBD = await buscarProductoPorLaboratorioYCodigo({ LABORATORIO: etiqueta.LABORATORIO, CODIGO: etiqueta.CODIGO });
         if (productoBD && productoBD.PRECIO != null) {
             return { ...etiqueta, PRECIO: productoBD.PRECIO };
         }

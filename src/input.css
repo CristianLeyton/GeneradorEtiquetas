@@ -57,3 +57,19 @@ button:disabled {
 body::-webkit-menu-bar {
   display: none !important;
 }
+
+@font-face {
+  font-family: 'BarCode';
+  src: url('./fonts/code128.ttf') format('truetype');
+}
+
+.barcode {
+  font-family: 'BarCode', sans-serif;
+  font-size: 16px;
+
+  & i {
+    display: none;
+  }
+
+}
+

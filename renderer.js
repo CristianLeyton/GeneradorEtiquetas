@@ -53,6 +53,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         <div class="flex-1">
           <h4 contenteditable="plaintext-only" class="font-semibold text-gray-800 mb-1 text-sm editable-nombre">${producto.NOMBRE}</h4>
           <p contenteditable="plaintext-only" class="text-sm text-gray-600 mb-2 block editable-presentacion">${producto.PRESENTACION.trim()}</p>
+          <div class="text-xs text-gray-500 mb-2">${producto.LABORATORIO_NOMBRE || ''}</div>
           <div class="flex gap-4 text-sm">
             <span class="text-blue-600 editable-codigo">
               <i class="fas fa-barcode mr-1"></i>
@@ -93,7 +94,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         CODIGO: codigo === 'Sin código' ? '' : codigo,
         TROQUEL: '', // Ya no se usa
         FECHA: fecha,
-        PRECIO: precio
+        PRECIO: precio,
+        LABORATORIO: producto.LABORATORIO, // <--- Asegúrate de incluir esto
+        //LABORATORIO_NOMBRE: producto.LABORATORIO_NOMBRE // <--- Opcional, para mostrar
       });
     });
 
@@ -592,18 +595,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     let sizeClass = '';
     let customClass = '';
     if (tamanoEtiqueta === 'pequena') {
-      sizeClass = 'w-48 h-28';
+      sizeClass = 'w-[189px] h-[113px]';
       customClass = 'etiqueta-pequena';
     } else if (tamanoEtiqueta === 'mediana') {
-      sizeClass = 'w-56 h-36';
+      sizeClass = 'w-[220px] h-[151px]';
       customClass = 'etiqueta-mediana';
     } else {
-      sizeClass = 'w-60 h-28';
+      sizeClass = 'w-[227px] h-[113px]';
       customClass = 'etiqueta-grande';
     }
     etiquetasAImprimir.forEach(async (producto, idx) => {
       const div = document.createElement('div');
-      div.className = `relative overflow-hidden border border-gray-300 rounded p-0 flex flex-col items-center justify-center bg-white m-[0.25mm] inline-flex ${sizeClass} ${customClass}`;
+      div.className = `relative overflow-hidden border border-gray-300 rounded p-0 flex flex-col  items-center justify-center bg-white m-[0.25mm] inline-flex ${sizeClass} ${customClass}`;
       // Logo centrado arriba
       if (logoPath) {
         const logo = document.createElement('img');
@@ -614,20 +617,20 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
       // Nombre
       const nombre = document.createElement('div');
-      nombre.className = 'text-xs font-bold text-center text-gray-800 mt-1 mb-1 line-clamp-1 overflow-hidden text-ellipsis etiqueta-nombre';
+      nombre.className = 'text-xs font-bold text-center text-gray-800 line-clamp-1 overflow-hidden text-ellipsis etiqueta-nombre';
       nombre.textContent = producto.NOMBRE;
       div.appendChild(nombre);
       // Presentación
       const presentacion = document.createElement('div');
-      presentacion.className = 'text-[10px] text-center text-gray-600 mb-1 break-words etiqueta-presentacion';
+      presentacion.className = 'text-[10px] text-center text-gray-600 break-words etiqueta-presentacion';
       presentacion.textContent = `${producto.PRESENTACION || "-"}`;
       div.appendChild(presentacion);
       // Código y Fecha
       const codetroq = document.createElement('div');
-      codetroq.className = 'flex justify-center gap-2 text-[10px] etiqueta-codetroq';
+      codetroq.className = 'flex justify-center items-center gap-4 text-[10px] mt-0 etiqueta-codetroq';
       codetroq.innerHTML = `
-        <span class="text-blue-600"><i class="fas fa-barcode mr-1"></i>${producto.CODIGO || 'Sin código'}</span>
-        <span class="text-gray-600"><i class="fas fa-calendar-alt mr-1"></i>${producto.FECHA || fechaActual()}</span>
+        <span class="text-blue-600 inline-block"><i class="fas fa-barcode mr-1"></i>${producto.CODIGO || 'Sin código'}</span>
+        <span class="text-gray-600 inline-block"><i class="fas fa-calendar-alt mr-1"></i>${producto.FECHA || fechaActual()}</span>
       `;
       div.appendChild(codetroq);
       // Precios
